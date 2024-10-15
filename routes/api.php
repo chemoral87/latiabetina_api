@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +45,56 @@ Route::group(["prefix" => "users"], function () {
   Route::post("/reset-password", "{$controller}@resetPassword");
 });
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-  return $request->user();
+Route::group(['middleware' => ['jwt.verify']], function () {
+  Route::prefix('users')->controller(UserController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/filter', 'filter');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::put('/{id}/children', 'children');
+    Route::delete('/{id}', 'delete');
+    Route::post('/change', 'changePassword');
+  });
+
+  Route::prefix('roles')->controller(RoleController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/filter', 'filter');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'delete');
+    Route::put('/{id}/children', 'children');
+  });
+
+  Route::prefix('permissions')->controller(PermissionController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/filter', 'filter');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'delete');
+  });
+
+  Route::prefix('organizations')->controller(OrganizationController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/filter', 'filter');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'delete');
+  });
+
+  Route::prefix('profiles')->controller(ProfileController::class)->group(function () {
+    Route::get("/{user_id}", "index");
+    // Route::get("/filter", "{$controller}@filter");
+    Route::get("/{user_id}/{id}", "show");
+    Route::post("/{user_id}", "create");
+    Route::post("/{user_id}/{id}/favorite", "favorite");
+    Route::put("/{user_id}/{id}", "update");
+    Route::delete("/{user_id}/{id}", "delete");
+  });
 });
+
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//   return $request->user();
+// });

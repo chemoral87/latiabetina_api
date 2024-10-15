@@ -21,8 +21,15 @@ class ConvertRequestKeysToSnakeCase {
       })
       ->toArray();
 
-    // Replace the request data with the snake_case version
-    $request->replace($snakeCasedInput);
+    // Convert all keys in the snake_case input to camel case
+    $camelCasedInput = collect($snakeCasedInput)
+      ->mapWithKeys(function ($value, $key) {
+        return [Str::camel($key) => $value];
+      })
+      ->toArray();
+
+    // Merge both snake and camel case versions into the request
+    $request->replace(array_merge($snakeCasedInput, $camelCasedInput));
 
     return $next($request);
   }
