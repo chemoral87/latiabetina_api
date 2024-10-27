@@ -105,7 +105,7 @@ class UserController extends Controller {
   }
 
   public function delete($id) {
-    if ($id != 1 && $id != 2) {
+    if ($id != 1) {
       // admin
       User::find($id)->delete();
     }
