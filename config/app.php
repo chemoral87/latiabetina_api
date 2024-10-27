@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Facade;
 return [
 
   /*
-  |--------------------------------------------------------------------------
+  |-------------------------------------------------------F-------------------
   | Application Name
   |--------------------------------------------------------------------------
   |
@@ -194,7 +194,7 @@ return [
     // App\Providers\BroadcastServiceProvider::class,
     App\Providers\EventServiceProvider::class,
     App\Providers\RouteServiceProvider::class,
-
+    OwenIt\Auditing\AuditingServiceProvider::class,
   ],
 
   /*

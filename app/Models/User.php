@@ -22,8 +22,13 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
    */
   protected $fillable = [
     'name',
+    'last_name',
+    'second_last_name',
     'email',
     'password',
+    'email_verified_at',
+    'cellphone',
+    'birthday',
   ];
 
   public function getJWTIdentifier() {
@@ -84,5 +89,11 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
 
     // Return the organization IDs where the permission is found
     return array_keys($permissions_orgs);
+  }
+
+  // No Auditing of password
+
+  public function getAuditIgnore() {
+    return ['password'];
   }
 }

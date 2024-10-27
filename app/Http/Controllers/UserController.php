@@ -10,7 +10,6 @@ use App\Notifications\UserPasswordNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Notification;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -18,7 +17,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class UserController extends Controller {
   public function index(Request $request) {
 
-    Log::info($request);
+    // Log::info($request);
 
     $query = User::query();
     $itemsPerPage = $request->itemsPerPage;
