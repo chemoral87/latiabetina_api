@@ -17,7 +17,7 @@ class InitSeeder extends Seeder {
    * @return void
    */
   public function run() {
-    // --- DEMO PERMISSIONS (real and fictitious) ---
+    // --- PERMISSIONS (real and fictitious) ---
     $permissions = [
       'user-index', 'user-create', 'user-update', 'user-delete',
       'role-index', 'role-create', 'role-update', 'role-delete',
@@ -29,7 +29,7 @@ class InitSeeder extends Seeder {
       Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
     }
 
-    // --- DEMO ROLES ---
+    // --- ROLES ---
     $roleA1 = Role::firstOrCreate(['name' => 'admin-alpha', 'guard_name' => 'web']);
     $roleA2 = Role::firstOrCreate(['name' => 'user-alpha', 'guard_name' => 'web']);
     $roleB1 = Role::firstOrCreate(['name' => 'admin-beta', 'guard_name' => 'web']);
@@ -41,39 +41,44 @@ class InitSeeder extends Seeder {
     $roleB1->syncPermissions(['user-index', 'beta-manage', 'beta-export']);
     $roleB2->syncPermissions(['user-index', 'beta-export']);
 
-    // --- DEMO USERS/PROFILES ---
-    $user1 = User::factory()->create([
-      'email' => 'alpha@example.com',
-      'password' => Hash::make('admin'),
-    ]);
-    $user2 = User::factory()->create([
-      'email' => 'beta@example.com',
-      'password' => Hash::make('admin'),
-    ]);
-
-    // Create CAM org if not exists (already created above, so just get it)
-    $orgCam = Organization::where('short_code', 'CAM')->first();
-    if (!$orgCam) {
-      $orgCam = Organization::create([
-        'name' => 'CAM',
-        'short_code' => 'CAM',
-        'description' => 'Org CAM',
+    // --- DEMO USERS/PROFILES ONLY IN LOCAL/DEV ---
+    if (app()->environment(['local', 'development', 'dev'])) {
+      $faker = \Faker\Factory::create();
+      $user1 = User::factory()->create([
+        'email' => 'alpha@example.com',
+        'password' => Hash::make('admin'),
+        'name' => $faker->firstName,
+        'last_name' => $faker->lastName,
       ]);
+      $user2 = User::factory()->create([
+        'email' => 'beta@example.com',
+        'password' => Hash::make('admin'),
+        'name' => $faker->firstName,
+        'last_name' => $faker->lastName,
+      ]);
+
+      // Create CAM org if not exists (already created above, so just get it)
+      $orgCam = Organization::where('short_code', 'CAM')->first();
+      if (!$orgCam) {
+        $orgCam = Organization::create([
+          'name' => 'CAM',
+          'short_code' => 'CAM',
+          'description' => 'Org CAM',
+        ]);
+      }
+
+      // Create profile for alpha@example.com in CAM
+      $profileCamAlpha = Profile::firstOrCreate([
+        'user_id' => $user1->id,
+        'org_id' => $orgCam->id,
+      ], [
+        'favorite' => false,
+      ]);
+
+      // Assign two roles to CAM profile
+      $profileCamAlpha->assignRole('admin-alpha');
+      $profileCamAlpha->assignRole('user-alpha');
     }
-
-    // Create profile for alpha@example.com in CAM
-    $profileCamAlpha = Profile::firstOrCreate([
-      'user_id' => $user1->id,
-      'org_id' => $orgCam->id,
-    ], [
-      'favorite' => false,
-    ]);
-
-    // Assign two roles to CAM profile
-    $profileCamAlpha->assignRole('admin-alpha');
-    $profileCamAlpha->assignRole('user-alpha');
-
-    // (permissions already created above)
 
     // create roles
     $role1 = Role::create(['name' => 'super', 'guard_name' => 'web']);
