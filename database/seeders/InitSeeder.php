@@ -17,47 +17,83 @@ class InitSeeder extends Seeder {
    * @return void
    */
   public function run() {
+    // --- DEMO PERMISSIONS (real and fictitious) ---
+    $permissions = [
+      'user-index', 'user-create', 'user-update', 'user-delete',
+      'role-index', 'role-create', 'role-update', 'role-delete',
+      'permission-index', 'permission-create', 'permission-update', 'permission-delete',
+      'organization-index',
+      'alpha-special', 'alpha-view', 'beta-manage', 'beta-export',
+    ];
+    foreach ($permissions as $perm) {
+      Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+    }
 
-    // create permissions
-    Permission::create(['name' => 'user-index']);
-    Permission::create(['name' => 'user-create']);
-    Permission::create(['name' => 'user-update']);
-    Permission::create(['name' => 'user-delete']);
+    // --- DEMO ROLES ---
+    $roleA1 = Role::firstOrCreate(['name' => 'admin-alpha', 'guard_name' => 'web']);
+    $roleA2 = Role::firstOrCreate(['name' => 'user-alpha', 'guard_name' => 'web']);
+    $roleB1 = Role::firstOrCreate(['name' => 'admin-beta', 'guard_name' => 'web']);
+    $roleB2 = Role::firstOrCreate(['name' => 'user-beta', 'guard_name' => 'web']);
 
-    Permission::create(['name' => 'role-index']);
-    Permission::create(['name' => 'role-create']);
-    Permission::create(['name' => 'role-update']);
-    Permission::create(['name' => 'role-delete']);
+    // Assign real and fictitious permissions to demo roles
+    $roleA1->syncPermissions(['user-index', 'alpha-special', 'alpha-view']);
+    $roleA2->syncPermissions(['user-index', 'alpha-view']);
+    $roleB1->syncPermissions(['user-index', 'beta-manage', 'beta-export']);
+    $roleB2->syncPermissions(['user-index', 'beta-export']);
 
-    Permission::create(['name' => 'permission-index']);
-    Permission::create(['name' => 'permission-create']);
-    Permission::create(['name' => 'permission-update']);
-    Permission::create(['name' => 'permission-delete']);
+    // --- DEMO USERS/PROFILES ---
+    $user1 = User::factory()->create([
+      'email' => 'alpha@example.com',
+      'password' => Hash::make('admin'),
+    ]);
+    $user2 = User::factory()->create([
+      'email' => 'beta@example.com',
+      'password' => Hash::make('admin'),
+    ]);
 
-    // create role
-    $role1 = Role::create(['name' => 'super']);
-    $role1->givePermissionTo('role-index');
-    $role1->givePermissionTo('role-create');
-    $role1->givePermissionTo('role-update');
-    $role1->givePermissionTo('role-delete');
+    // Create CAM org if not exists (already created above, so just get it)
+    $orgCam = Organization::where('short_code', 'CAM')->first();
+    if (!$orgCam) {
+      $orgCam = Organization::create([
+        'name' => 'CAM',
+        'short_code' => 'CAM',
+        'description' => 'Org CAM',
+      ]);
+    }
 
-    $role1->givePermissionTo('user-index');
-    $role1->givePermissionTo('user-create');
-    $role1->givePermissionTo('user-update');
-    $role1->givePermissionTo('user-delete');
+    // Create profile for alpha@example.com in CAM
+    $profileCamAlpha = Profile::firstOrCreate([
+      'user_id' => $user1->id,
+      'org_id' => $orgCam->id,
+    ], [
+      'favorite' => false,
+    ]);
 
-    $role1->givePermissionTo('permission-index');
-    $role1->givePermissionTo('permission-create');
-    $role1->givePermissionTo('permission-update');
-    $role1->givePermissionTo('permission-delete');
+    // Assign two roles to CAM profile
+    $profileCamAlpha->assignRole('admin-alpha');
+    $profileCamAlpha->assignRole('user-alpha');
 
-    Role::create(['name' => 'publisher']);
-    Role::create(['name' => 'cashier']);
-    Role::create(['name' => 'leader']);
-    Role::create(['name' => 'worker']);
-    Role::create(['name' => 'auditor']);
+    // (permissions already created above)
 
-    // create demo users
+    // create roles
+    $role1 = Role::create(['name' => 'super', 'guard_name' => 'web']);
+    $role1->givePermissionTo([
+      'role-index', 'role-create', 'role-update', 'role-delete',
+      'user-index', 'user-create', 'user-update', 'user-delete',
+      'permission-index', 'permission-create', 'permission-update', 'permission-delete',
+      'organization-index',
+    ]);
+
+    $managerRole = Role::create(['name' => 'manager', 'guard_name' => 'web']);
+    $managerRole->givePermissionTo(['user-index', 'role-index', 'permission-index']);
+
+    Role::create(['name' => 'publisher', 'guard_name' => 'web']);
+    Role::create(['name' => 'cashier', 'guard_name' => 'web']);
+    Role::create(['name' => 'leader', 'guard_name' => 'web']);
+    Role::create(['name' => 'worker', 'guard_name' => 'web']);
+    Role::create(['name' => 'auditor', 'guard_name' => 'web']);
+
+    // create demo user
     $user = User::create([
       'name' => 'Sergio',
       'last_name' => 'Morales',
@@ -66,19 +102,38 @@ class InitSeeder extends Seeder {
       'password' => Hash::make('admin'),
     ]);
 
-    $organization = Organization::create([
-      'name' => 'admin',
-      'short_code' => 'admin',
-      'description' => 'administrators',
-    ]);
+    // create organizations (idempotent)
+    $orgAdmin = Organization::firstOrCreate(
+      ['short_code' => 'ADMIN'],
+      ['name' => 'ADMIN', 'description' => 'Administrators']
+    );
+    $orgCam = Organization::firstOrCreate(
+      ['short_code' => 'CAM'],
+      ['name' => 'CAM', 'description' => 'Org CAM']
+    );
+    $orgCom = Organization::firstOrCreate(
+      ['short_code' => 'COM'],
+      ['name' => 'COM', 'description' => 'Org COM']
+    );
 
-    $profile = Profile::create([
-      'user_id' => $user->id, // Relaciona con el usuario creado
-      'org_id' => $organization->id, // Relaciona con la organización creada
-      'favorite' => true, // Establece el valor de 'favorite'
-    ]);
+    // create profiles for each org (idempotent)
+    $profileAdmin = Profile::firstOrCreate(
+      ['user_id' => $user->id, 'org_id' => $orgAdmin->id],
+      ['favorite' => true]
+    );
+    $profileCam = Profile::firstOrCreate(
+      ['user_id' => $user->id, 'org_id' => $orgCam->id],
+      ['favorite' => false]
+    );
+    $profileCom = Profile::firstOrCreate(
+      ['user_id' => $user->id, 'org_id' => $orgCom->id],
+      ['favorite' => false]
+    );
 
-    $profile->roles()->sync([$role1->id]);
+    // assign different roles to each profile
+    $profileAdmin->assignRole('super');
+    $profileCam->assignRole('manager');
+    $profileCom->assignRole('publisher');
 
   }
 

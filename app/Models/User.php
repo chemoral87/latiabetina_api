@@ -65,32 +65,14 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
   }
 
   public function getOrgsByPermission($permission) {
-    $permissions_orgs = [];
-
-    // Loop through each profile
-    foreach ($this->profiles as $profile) {
-      $orgCode = $profile->organization->short_code;
-
-      // Loop through roles associated with the profile
-      foreach ($profile->roles as $role) {
-        // Loop through permissions associated with the role
-        foreach ($role->permissions as $rolePermission) {
-          if ($rolePermission->name === $permission) {
-            $permissions_orgs[$profile->org_id] = $orgCode;
-          }
-        }
-      }
-
-      // Loop through direct permissions of the profile
-      foreach ($profile->permissions as $profilePermission) {
-        if ($profilePermission->name === $permission) {
-          $permissions_orgs[$profile->org_id] = $orgCode;
-        }
+    $orgIds = [];
+    $orgs = \App\Models\Organization::all();
+    foreach ($orgs as $org) {
+      if ($this->hasPermissionTo($permission, null, $org->id)) {
+        $orgIds[] = $org->id;
       }
     }
-
-    // Return the organization IDs where the permission is found
-    return array_keys($permissions_orgs);
+    return $orgIds;
   }
 
   // No Auditing of password

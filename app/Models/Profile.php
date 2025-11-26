@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Traits\HasRoles;
 
 class Profile extends Model {
+  protected $guard_name = 'web';
   use HasFactory, HasRoles;
 
   protected $fillable = ['user_id', 'org_id', 'favorite'];

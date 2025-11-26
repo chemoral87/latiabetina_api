@@ -39,6 +39,7 @@ class UserResource extends JsonResource {
 
           // Store permission for the organization
           $permissions_orgs[$permission->name][$profile->org_id] = true;
+
         }
       }
 
@@ -61,7 +62,6 @@ class UserResource extends JsonResource {
       $orgIds = array_keys($orgIds);
     }
 
-    // if $orgs set []
 
     return [
       'id' => $this->id,
