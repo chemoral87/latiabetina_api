@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
@@ -37,6 +38,16 @@ Route::group(['middleware' => ['api']], function () {
     Route::post('reset-password', 'resetPassword');
   });
 });
+
+// Rutas de Google OAuth con middleware web para callbacks
+Route::middleware('web')->prefix('auth/google')->controller(GoogleAuthController::class)->group(function () {
+  Route::get('redirect', 'redirectToGoogle');
+  Route::get('callback', 'handleGoogleCallback');
+});
+
+// Ruta para mobile/SPA sin middleware de sesión
+Route::post('auth/google/token', [GoogleAuthController::class, 'handleGoogleToken']);
+Route::post('auth/google/validate', [GoogleAuthController::class, 'validateToken']);
 
 Route::group(['middleware' => ['jwt.verify']], function () {
   Route::prefix('user')->controller(UserController::class)->group(function () {

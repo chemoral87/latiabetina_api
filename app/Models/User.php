@@ -29,6 +29,8 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
     'email_verified_at',
     'cellphone',
     'birthday',
+    'google_id',
+    'avatar',
   ];
 
   public function getJWTIdentifier() {
