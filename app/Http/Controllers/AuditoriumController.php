@@ -8,9 +8,19 @@ use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditoriumController extends Controller {
+  protected $user;
+
+  public function __construct() {
+    $this->user = JWTAuth::user();
+  }
   public function index(Request $request) {
-    $query = Auditorium::query()->leftJoin('organizations', 'auditoriums.org_id', '=', 'organizations.id')
-      ->select('auditoriums.*', 'organizations.name as org_name');
+    $user = $this->user;
+    $orgIds = $user->getOrgsByPermission('auditorium-index');
+
+    $query = Auditorium::query()
+      ->leftJoin('organizations', 'auditoriums.org_id', '=', 'organizations.id')
+      ->select('auditoriums.*', 'organizations.name as org_name')
+      ->whereIn('auditoriums.org_id', $orgIds);
 
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
@@ -24,19 +34,25 @@ class AuditoriumController extends Controller {
       }
     }
     if ($filter) {
-      $query->where('name', 'like', "%{$filter}%");
+      $query->where('auditoriums.name', 'like', "%{$filter}%");
     }
     $auditoriums = $query->paginate($itemsPerPage);
     return new DataSetResource($auditoriums);
   }
 
   public function show(Request $request, $id) {
+    $user = $this->user;
     $auditorium = Auditorium::findOrFail($id);
+    $orgIds = $user->getOrgsByPermission('auditorium-index');
+    if (!in_array($auditorium->org_id, $orgIds)) {
+      abort(403, 'Auditorium access forbidden');
+    }
     return response()->json($auditorium);
   }
 
   public function create(Request $request) {
-    $userId = JWTAuth::user()->id;
+    $user = $this->user;
+    $userId = $user ? $user->id : null;
     $this->validate($request, [
       'name' => 'required|unique:auditoriums,name',
       'org_id' => 'required|integer',
@@ -54,7 +70,8 @@ class AuditoriumController extends Controller {
   }
 
   public function update(Request $request, $id) {
-    $userId = JWTAuth::user()->id;
+    $user = $this->user;
+    $userId = $user ? $user->id : null;
     $this->validate($request, [
       'name' => 'required',
       'org_id' => 'required|integer',
