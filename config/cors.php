@@ -23,10 +23,12 @@ return [
     // 'https://admin.latiabetina.com', // ⭐ Tu frontend real
     // 'https://latiabetina.com',
     // 'https://www.latiabetina.com'
-    '/^https:\/\/.*\.latiabetina\.com$/', // ⭐ Acepta cualquier subdominio
+    // ⭐ Acepta cualquier subdominio
   ],
 
-  'allowed_origins_patterns' => [],
+  'allowed_origins_patterns' => [
+    '/^https:\/\/.*\.latiabetina\.com$/',
+  ],
 
   'allowed_headers' => ['*'],
 
