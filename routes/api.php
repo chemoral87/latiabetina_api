@@ -1,5 +1,10 @@
+
+
+
 <?php
 
+use App\Http\Controllers\AuditoriumController;
+use App\Http\Controllers\AuditoriumEventController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OrganizationController;
@@ -69,6 +74,22 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::put('/{id}', 'update');
     Route::delete('/{id}', 'delete');
     Route::put('/{id}/children', 'children');
+  });
+
+  Route::prefix('auditorium')->controller(AuditoriumController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'delete');
+  });
+
+  Route::prefix('auditorium-event')->controller(AuditoriumEventController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'store');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
   });
 
   Route::prefix('permission')->controller(PermissionController::class)->group(function () {

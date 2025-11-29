@@ -80,4 +80,8 @@ return [
   'parking_car_delete' => 'Auto eliminado',
   'parking_car_not_found' => 'Auto no encontrado',
 
+  'auditorium_create' => 'Auditorio :name creado',
+  'auditorium_update' => 'Auditorio :name guardado',
+  'auditorium_delete' => 'Auditorio eliminado',
+
 ];
