@@ -19,9 +19,12 @@ return [
 
   'allowed_methods' => ['*'],
 
-  'allowed_origins' => ['https://admin.latiabetina.com', // ⭐ Tu frontend real
-    'https://latiabetina.com',
-    'https://www.latiabetina.com'],
+  'allowed_origins' => [
+    // 'https://admin.latiabetina.com', // ⭐ Tu frontend real
+    // 'https://latiabetina.com',
+    // 'https://www.latiabetina.com'
+    '/^https:\/\/.*\.latiabetina\.com$/', // ⭐ Acepta cualquier subdominio
+  ],
 
   'allowed_origins_patterns' => [],
 
