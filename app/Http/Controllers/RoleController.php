@@ -46,13 +46,13 @@ class RoleController extends Controller {
   public function create(Request $request) {
     $this->validate($request, [
       'name' => 'required|unique:roles,name',
-      
+
     ]);
 
     $role = Role::create(['name' => $request->input('name')]);
     $role->syncPermissions($request->permissions);
 
-    return ['success' => __('messa.role_create')];
+    return response()->json(['success' => __('messa.role_create')]);
   }
 
   public function update(Request $request, $id) {
