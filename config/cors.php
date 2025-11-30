@@ -27,6 +27,7 @@ return [
   ],
 
   'allowed_origins_patterns' => [
+    '/^http:\/\/localhost:\d+$/',
     '/^https:\/\/.*\.latiabetina\.com$/',
   ],
 
