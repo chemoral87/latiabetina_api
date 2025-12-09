@@ -1,35 +1,59 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../../avivamiento/avivamiento_webpage"
-		},
-		{
-			"path": "../latiabetina_aui"
-		}
-	],
-	"settings": {
-		"workbench.colorCustomizations": {
-			"activityBar.activeBackground": "#f491b2",
-			"activityBar.background": "#f491b2",
-			"activityBar.foreground": "#15202b",
-			"activityBar.inactiveForeground": "#15202b99",
-			"activityBarBadge.background": "#ebfce2",
-			"activityBarBadge.foreground": "#15202b",
-			"commandCenter.border": "#15202b99",
-			"sash.hoverBorder": "#f491b2",
-			"statusBar.background": "#f06292",
-			"statusBar.foreground": "#15202b",
-			"statusBarItem.hoverBackground": "#ec3372",
-			"statusBarItem.remoteBackground": "#f06292",
-			"statusBarItem.remoteForeground": "#15202b",
-			"titleBar.activeBackground": "#f06292",
-			"titleBar.activeForeground": "#15202b",
-			"titleBar.inactiveBackground": "#f0629299",
-			"titleBar.inactiveForeground": "#15202b99"
-		},
-		"peacock.color": "#F06292"
-	}
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "../../avivamiento/avivamiento_webpage"
+    },
+    {
+      "path": "../latiabetina_aui"
+    }
+  ],
+  "settings": {
+    "workbench.colorCustomizations": {
+      "activityBar.activeBackground": "#0b33e5",
+      "activityBar.background": "#0b33e5",
+      "activityBar.foreground": "#e7e7e7",
+      "activityBar.inactiveForeground": "#e7e7e799",
+      "activityBarBadge.background": "#f52a4f",
+      "activityBarBadge.foreground": "#e7e7e7",
+      "commandCenter.border": "#e7e7e799",
+      "sash.hoverBorder": "#0b33e5",
+      "statusBar.background": "#0928b4",
+      "statusBar.foreground": "#e7e7e7",
+      "statusBarItem.hoverBackground": "#0b33e5",
+      "statusBarItem.remoteBackground": "#0928b4",
+      "statusBarItem.remoteForeground": "#e7e7e7",
+      "titleBar.activeBackground": "#0928b4",
+      "titleBar.activeForeground": "#e7e7e7",
+      "titleBar.inactiveBackground": "#0928b499",
+      "titleBar.inactiveForeground": "#e7e7e799"
+    },
+    "peacock.color": "#0928b4",
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/.nuxt": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/vendor": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/.nuxt": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/vendor": true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/.next/**": true,
+      "**/.nuxt/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/vendor/**": true
+    }
+  }
 }
