@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../avivamiento/avivamiento_webpage"
+		},
+		{
+			"path": "../latiabetina_aui"
+		}
+	],
+	"settings": {
+		"workbench.colorCustomizations": {
+			"activityBar.activeBackground": "#f491b2",
+			"activityBar.background": "#f491b2",
+			"activityBar.foreground": "#15202b",
+			"activityBar.inactiveForeground": "#15202b99",
+			"activityBarBadge.background": "#ebfce2",
+			"activityBarBadge.foreground": "#15202b",
+			"commandCenter.border": "#15202b99",
+			"sash.hoverBorder": "#f491b2",
+			"statusBar.background": "#f06292",
+			"statusBar.foreground": "#15202b",
+			"statusBarItem.hoverBackground": "#ec3372",
+			"statusBarItem.remoteBackground": "#f06292",
+			"statusBarItem.remoteForeground": "#15202b",
+			"titleBar.activeBackground": "#f06292",
+			"titleBar.activeForeground": "#15202b",
+			"titleBar.inactiveBackground": "#f0629299",
+			"titleBar.inactiveForeground": "#15202b99"
+		},
+		"peacock.color": "#F06292"
+	}
+}
