@@ -20,10 +20,10 @@ return [
   'allowed_methods' => ['*'],
 
   'allowed_origins' => [
-    // 'https://admin.latiabetina.com', // ⭐ Tu frontend real
-    // 'https://latiabetina.com',
-    // 'https://www.latiabetina.com'
-    // ⭐ Acepta cualquier subdominio
+    'https://admin.latiabetina.com', // ⭐ Tu frontend real
+    'https://latiabetina.com',
+    'https://www.latiabetina.com',
+    'https://admin.avivamientomonterrey.com', // Admin externo que solicita login
   ],
 
   'allowed_origins_patterns' => [

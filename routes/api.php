@@ -29,6 +29,7 @@ Route::get("test", function () {
   return "ok test - " . date("d  Y h:i:s A");
 });
 
+// Public endpoint for creating testimonies (no API middleware
 Route::group(['middleware' => ['api']], function () {
   Route::prefix('auth')->controller(AuthController::class)->group(function () {
     Route::post('login', 'login');
@@ -38,8 +39,6 @@ Route::group(['middleware' => ['api']], function () {
   });
 
   Route::prefix('testimony')->controller(\App\Http\Controllers\TestimonyController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/{id}', 'show');
     Route::post('/', 'store');
   });
 
