@@ -37,6 +37,12 @@ Route::group(['middleware' => ['api']], function () {
     Route::post('user', 'me');
   });
 
+  Route::prefix('testimony')->controller(\App\Http\Controllers\TestimonyController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'store');
+  });
+
   Route::prefix('user')->controller(UserController::class)->group(function () {
     Route::post('register', 'register');
     Route::post('send-code', 'sendResetCode')->middleware('throttle:3,1');
