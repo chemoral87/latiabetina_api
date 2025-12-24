@@ -2,13 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DataSetResource;
 use App\Models\Testimony;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TestimonyController extends Controller {
-  public function index() {
-    return response()->json(Testimony::orderBy('created_at', 'desc')->get());
+  protected $user;
+
+  public function __construct() {
+    $this->user = JWTAuth::user();
+  }
+
+  public function index(Request $request) {
+    $orgIds = $this->user->getOrgsByPermission('auditorium-index');
+
+    $filter = $request->get("filter");
+    $query = queryServerSide($request, Testimony::query());
+    if ($filter) {
+      $query->where("name", "like", "%" . $filter . "%");
+    }
+
+    if (empty($orgIds)) {
+      // user has no orgs with permission — return empty result
+      $query->whereRaw('0 = 1');
+    } else {
+      $query->whereIn('org_id', $orgIds);
+    }
+
+    $testimonies = $query->paginate($request->get('itemsPerPage'));
+    return new DataSetResource($testimonies);
   }
 
   public function show($id) {

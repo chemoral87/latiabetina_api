@@ -12,6 +12,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\TestimonyController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,7 +39,7 @@ Route::group(['middleware' => ['api']], function () {
     Route::post('user', 'me');
   });
 
-  Route::prefix('testimony')->controller(\App\Http\Controllers\TestimonyController::class)->group(function () {
+  Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
     Route::post('/', 'store');
   });
 
@@ -130,6 +131,10 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::post("/", 'create');
     Route::put("/{id}", 'update');
     Route::delete("/{id}", 'delete');
+  });
+
+  Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
+    Route::get('/', 'index');
   });
 
 });
