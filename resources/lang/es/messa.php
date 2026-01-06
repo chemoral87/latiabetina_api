@@ -84,4 +84,9 @@ return [
   'auditorium_update' => 'Auditorio :name guardado',
   'auditorium_delete' => 'Auditorio eliminado',
 
+  'testimony_update' => 'Testimonio guardado',
+  'testimony_delete' => 'Testimonio eliminado',
+  'testimony_apprved' => 'Testimonio aprobado',
+  'testimony_rejected' => 'Testimonio rechazado',
+
 ];

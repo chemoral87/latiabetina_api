@@ -135,6 +135,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
     Route::get('/', 'index');
+    Route::put('/{id}/status', 'updateStatus');
+    Route::put("/{id}", "update");
   });
 
 });

@@ -95,8 +95,6 @@ class TestimonyController extends Controller {
       'categories.*' => 'string|max:255',
       'link' => 'nullable|url|max:2048',
       'description' => 'nullable|string',
-      'approved_by' => 'nullable|integer',
-      'approved_date' => 'nullable|date',
     ]);
 
     if ($validator->fails()) {
@@ -104,6 +102,24 @@ class TestimonyController extends Controller {
     }
 
     $testimony->update($data);
+
+    return ['success' => __('messa.testimony_update')];
+
+  }
+
+  public function updateStatus(Request $request, $id) {
+    $validator = Validator::make($request->all(), [
+      'status' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $testimony = Testimony::findOrFail($id);
+    $testimony->status = $request->get('status');
+    $testimony->status_by = $this->user ? $this->user->id : null;
+    $testimony->save();
 
     return response()->json($testimony);
   }
