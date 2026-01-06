@@ -16,7 +16,7 @@ class TestimonyController extends Controller {
   }
 
   public function index(Request $request) {
-    $orgIds = $this->user->getOrgsByPermission('auditorium-index');
+    $orgIds = $this->user->getOrgsByPermission('testimony-index');
 
     $filter = $request->get("filter");
     $query = queryServerSide($request, Testimony::query());
