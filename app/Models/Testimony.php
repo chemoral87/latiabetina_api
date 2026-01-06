@@ -14,14 +14,14 @@ class Testimony extends Model {
     'categories',
     'link',
     'description',
-    'approved_by',
-    'approved_date',
+    'status_by',
+    'status',
     'org_id',
   ];
 
   protected $casts = [
     'categories' => 'array',
-    'approved_date' => 'datetime',
-    'approved_by' => 'integer',
+    'status' => 'string',
+    'status_by' => 'integer',
   ];
 }
