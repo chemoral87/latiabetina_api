@@ -19,9 +19,17 @@ class TestimonyController extends Controller {
     $orgIds = $this->user->getOrgsByPermission('testimony-index');
 
     $filter = $request->get("filter");
+    $status = $request->get("status");
+
     $query = queryServerSide($request, Testimony::query());
     if ($filter) {
       $query->where("name", "like", "%" . $filter . "%");
+    }
+
+    if ($status) {
+      $query->where("status", $status);
+    } else {
+      $query->whereNull("status");
     }
 
     if (empty($orgIds)) {
@@ -35,8 +43,56 @@ class TestimonyController extends Controller {
     return new DataSetResource($testimonies);
   }
 
+  // Public endpoint: list all approved testimonies (no org restriction)
+  public function publicIndex(Request $request) {
+    $filter = $request->get("filter");
+    $org_id = $request->get("org_id");
+
+    // Decode base64 org_id if provided
+    $org_id_decoded = null;
+    if ($org_id) {
+      $decoded = base64_decode($org_id, true);
+      if ($decoded !== false && is_numeric($decoded)) {
+        $org_id_decoded = (int) $decoded;
+      }
+    }
+
+    $query = queryServerSide($request, Testimony::query());
+    $query->where('status', 'approved');
+
+    $query->where('org_id', $org_id_decoded);
+
+    if ($filter) {
+      $query->where("name", "like", "%" . $filter . "%");
+    }
+
+    $testimonies = $query->orderBy('created_at', 'desc')
+      ->select(['name', 'categories', 'link', 'description', 'created_at'])
+      ->paginate($request->get('itemsPerPage'));
+
+    $testimonies->getCollection()->transform(function ($item) {
+      return [
+        'name' => $item->name,
+        'categories' => $item->categories,
+        'link' => $item->link,
+        'description' => $item->description,
+        'created_at' => $item->created_at,
+      ];
+    });
+
+    return response()->json($testimonies);
+  }
+
   public function show($id) {
     $testimony = Testimony::findOrFail($id);
+
+    $statusUser = null;
+    if ($testimony->status_by) {
+      $statusUser = \App\Models\User::find($testimony->status_by);
+    }
+
+    $testimony->setAttribute('status_username', $statusUser ? ($statusUser->name ?? null) : null);
+
     return response()->json($testimony);
   }
 
@@ -51,6 +107,14 @@ class TestimonyController extends Controller {
 
     if (isset($data['categories']) && is_string($data['categories'])) {
       $data['categories'] = array_map('trim', explode(',', $data['categories']));
+    }
+
+    // Decode base64-encoded org_id if provided (allow updating org via encoded id)
+    if (isset($data['org_id']) && is_string($data['org_id'])) {
+      $decoded = base64_decode($data['org_id'], true);
+      if ($decoded !== false && is_numeric($decoded)) {
+        $data['org_id'] = (int) $decoded;
+      }
     }
 
     $validator = Validator::make($data, [
@@ -101,16 +165,32 @@ class TestimonyController extends Controller {
       return response()->json(['errors' => $validator->errors()], 422);
     }
 
+    // Never allow changing the org of an existing testimony via update
+    if (isset($data['org_id'])) {
+      unset($data['org_id']);
+    }
+
     $testimony->update($data);
 
-    return ['success' => __('messa.testimony_update')];
+    return ['success' => __('messa.role_update'), 'testimony' => $testimony];
 
   }
 
   public function updateStatus(Request $request, $id) {
+
     $validator = Validator::make($request->all(), [
-      'status' => 'required|string',
+      'status' => 'required|in:approved,rejected',
     ]);
+
+    switch ($request->get('status')) {
+      case 'approved':
+        $success_message = __('messa.testimony_approved');
+        break;
+      case 'rejected':
+      default:
+        $success_message = __('messa.testimony_rejected');
+        break;
+    }
 
     if ($validator->fails()) {
       return response()->json(['errors' => $validator->errors()], 422);
@@ -118,10 +198,22 @@ class TestimonyController extends Controller {
 
     $testimony = Testimony::findOrFail($id);
     $testimony->status = $request->get('status');
-    $testimony->status_by = $this->user ? $this->user->id : null;
+    $testimony->status_by = $this->user->id;
+    $testimony->updated_at = now();
     $testimony->save();
 
-    return response()->json($testimony);
+    $statusUser = null;
+    if ($testimony->status_by) {
+      $statusUser = \App\Models\User::find($testimony->status_by);
+    }
+
+    $testimony->setAttribute('status_username', $statusUser ? ($statusUser->name ?? null) : null);
+
+    return [
+      'success' => $success_message,
+      'testimony' => $testimony,
+    ];
+    // return response()->json($testimony);
   }
 
   public function destroy($id) {

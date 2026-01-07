@@ -40,6 +40,7 @@ Route::group(['middleware' => ['api']], function () {
   });
 
   Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
+    Route::get('/public', 'publicIndex');
     Route::post('/', 'store');
   });
 
@@ -135,6 +136,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
     Route::get('/', 'index');
+    Route::get("/{id}", 'show');
     Route::put('/{id}/status', 'updateStatus');
     Route::put("/{id}", "update");
   });
