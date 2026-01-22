@@ -5,8 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\ChurchEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ChurchEventController extends Controller {
+  protected $user;
+  public function __construct() {
+    $this->user = JWTAuth::user();
+  }
+
   public function index() {
     return ChurchEvent::with(['organization', 'creator'])->get();
   }
@@ -16,6 +22,10 @@ class ChurchEventController extends Controller {
   }
 
   public function store(Request $request) {
+
+    // $orgIds = $this->user->getOrgsByPermission('church-event-index');
+    $created_by = $this->user->id;
+
     $data = $request->validate([
       'name' => 'required|string|max:255',
       'slug_name' => 'nullable|string|unique:church_events,slug_name|max:255',
@@ -23,10 +33,10 @@ class ChurchEventController extends Controller {
       'description' => 'nullable|string',
       'start_date' => 'required|date',
       'end_date' => 'nullable|date|after_or_equal:start_date',
-      'time_start' => 'nullable|date_format:H:i:s',
+      'time_start' => 'nullable|date_format:H:i',
       'url_image' => 'nullable|string|max:255',
       'org_id' => 'required|exists:organizations,id',
-      'created_by' => 'required|exists:users,id',
+      // 'created_by' => 'required|exists:users,id',
     ]);
 
     // Generate slug_name if not provided
@@ -34,6 +44,8 @@ class ChurchEventController extends Controller {
       $yearMonth = date('ym');
       $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . $yearMonth;
     }
+
+    $data['created_by'] = $created_by;
 
     $event = ChurchEvent::create($data);
     return response()->json($event, 201);
@@ -49,7 +61,7 @@ class ChurchEventController extends Controller {
       'description' => 'nullable|string',
       'start_date' => 'sometimes|date',
       'end_date' => 'nullable|date|after_or_equal:start_date',
-      'time_start' => 'nullable|date_format:H:i:s',
+      'time_start' => 'nullable|date_format:H:i',
       'url_image' => 'nullable|string|max:255',
       'org_id' => 'sometimes|exists:organizations,id',
       'created_by' => 'sometimes|exists:users,id',
