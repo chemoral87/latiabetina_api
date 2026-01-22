@@ -6,6 +6,7 @@
 use App\Http\Controllers\AuditoriumController;
 use App\Http\Controllers\AuditoriumEventController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChurchEventController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PermissionController;
@@ -92,6 +93,14 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('auditorium-event')->controller(AuditoriumEventController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'store');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
+  });
+
+  Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
     Route::get('/', 'index');
     Route::get('/{id}', 'show');
     Route::post('/', 'store');
