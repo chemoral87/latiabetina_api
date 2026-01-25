@@ -15,6 +15,7 @@ return new class extends Migration {
       $table->unsignedBigInteger('created_by')->nullable();
       $table->timestamps();
 
+      $table->foreign('auditorium_event_id')->references('id')->on('auditorium_events')->onDelete('cascade');
       $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
     });
   }
