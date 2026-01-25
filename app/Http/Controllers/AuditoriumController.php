@@ -33,9 +33,16 @@ class AuditoriumController extends Controller {
         $query = $query->orderBy($column, $sortDirection);
       }
     }
+
+    if ($request->has('org_id') && !empty($request->get('org_id'))) {
+      $org_id = $request->get('org_id');
+      $query->where('auditoriums.org_id', $org_id);
+    }
+
     if ($filter) {
       $query->where('auditoriums.name', 'like', "%{$filter}%");
     }
+
     $auditoriums = $query->paginate($itemsPerPage);
     return new DataSetResource($auditoriums);
   }

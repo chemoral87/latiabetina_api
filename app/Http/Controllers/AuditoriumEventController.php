@@ -2,25 +2,80 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DataSetResource;
+use App\Models\Auditorium;
 use App\Models\AuditoriumEvent;
 use Illuminate\Http\Request;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditoriumEventController extends Controller {
-  public function index() {
+
+  protected $user;
+  public function __construct() {
+    $this->user = JWTAuth::user();
+  }
+
+  public function index(Request $request) {
+
+    $user = $this->user;
+    $orgIds = $user->getOrgsByPermission('auditorium-index');
+
+    $query = AuditoriumEvent::query()
+      ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
+      ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
+      ->select('auditorium_events.*', 'auditoriums.name as auditorium_name', 'organizations.name as org_name');
+
+    $itemsPerPage = $request->get('itemsPerPage');
+    $sortBy = $request->get('sortBy');
+    $sortDesc = $request->get('sortDesc');
+    $filter = $request->get('filter');
+
+    if ($sortBy) {
+      foreach ($sortBy as $index => $column) {
+        $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
+        $query = $query->orderBy($column, $sortDirection);
+      }
+    }
+
+    if ($request->has('org_id') && !empty($request->get('org_id'))) {
+      $org_id = $request->get('org_id');
+      $query->where('org_id', $org_id);
+    }
+
+    // if ($filter) {
+    //   $query->where('auditoriums.name', 'like', "%{$filter}%");
+    // }
+
+    $auditoriumEvents = $query->paginate($itemsPerPage);
+    return new DataSetResource($auditoriumEvents);
+
     return AuditoriumEvent::all();
   }
 
   public function show($id) {
-    return AuditoriumEvent::findOrFail($id);
+    $event = AuditoriumEvent::query()
+      ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
+      ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
+      ->select('auditorium_events.*', 'auditoriums.name as auditorium_name', 'organizations.name as org_name')
+      ->where('auditorium_events.id', $id)
+      ->firstOrFail();
+    return response()->json($event);
   }
 
   public function store(Request $request) {
+
+    $auditorium_id = $request->input('auditorium_id');
+    $auditorium = Auditorium::findOrFail($auditorium_id);
+
     $data = $request->validate([
       'event_date' => 'required|date',
-      'config' => 'required|string',
+
       'auditorium_id' => 'required|exists:auditoriums,id',
       'org_id' => 'required|exists:organizations,id',
     ]);
+
+    $data['config'] = $auditorium->config;
+
     $event = AuditoriumEvent::create($data);
     return response()->json($event, 201);
   }

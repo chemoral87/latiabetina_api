@@ -9,7 +9,7 @@ return new class extends Migration {
     Schema::create('auditorium_events', function (Blueprint $table) {
       $table->id();
       $table->date('event_date');
-      $table->text('config');
+      $table->text('config')->nullable();
       $table->unsignedBigInteger('auditorium_id');
       $table->unsignedBigInteger('org_id');
       $table->timestamps();
