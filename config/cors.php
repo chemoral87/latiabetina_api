@@ -29,6 +29,7 @@ return [
 
   'allowed_origins_patterns' => [
     '/^http:\/\/localhost:\d+$/',
+    '/^http:\/\/192\.168\.\d+\.\d+:\d+$/',
     '/^https:\/\/.*\.latiabetina\.com$/',
     '/^https:\/\/(?:[A-Za-z0-9-]+\.)*avivamientomonterrey\.com$/',
   ],
