@@ -59,6 +59,13 @@ class AuditoriumEventController extends Controller {
       ->select('auditorium_events.*', 'auditoriums.name as auditorium_name', 'organizations.name as org_name')
       ->where('auditorium_events.id', $id)
       ->firstOrFail();
+
+    $event->seats = AuditoriumEvent::find($id)
+      ->hasMany(\App\Models\AuditoriumEventSeat::class, 'auditorium_event_id')
+      ->select("seat_id", "status")
+      ->whereNotNull('status')
+      ->get();
+
     return response()->json($event);
   }
 

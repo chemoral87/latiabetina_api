@@ -10,7 +10,7 @@ return new class extends Migration {
       $table->id();
       $table->unsignedBigInteger('auditorium_event_id');
       $table->string('seat_id');
-      $table->string('status'); // available, reserved, occupied, blocked
+      $table->string('status')->nullable(); // available, reserved, occupied, blocked
       $table->unsignedBigInteger('created_by')->nullable();
       $table->timestamps();
 
