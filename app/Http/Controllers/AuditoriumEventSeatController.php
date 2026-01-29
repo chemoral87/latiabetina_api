@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SeatUpdated;
 use App\Http\Resources\DataSetResource;
 use App\Models\AuditoriumEventSeat;
 use App\Models\AuditoriumEventSeatLog;
@@ -88,6 +89,16 @@ class AuditoriumEventSeatController extends Controller {
       'created_by' => $user->id,
     ]);
 
+    // Fire event for real-time updates
+    $seatsData = array_map(function ($seat) {
+      return [
+        'auditorium_event_id' => $seat->auditorium_event_id,
+        'seat_id' => $seat->seat_id,
+        'status' => $seat->status,
+      ];
+    }, $updatedSeats);
+    event(new SeatUpdated($seatsData, $auditoriumEventId));
+
     return response()->json([
 
       'success' => 'Asientos actualizados',
@@ -134,6 +145,15 @@ class AuditoriumEventSeatController extends Controller {
       );
       $updated[] = $seat;
     }
+
+    // Fire event for real-time updates
+    $seatsData = array_map(function ($seat) {
+      return [
+        'seat_id' => $seat->seat_id,
+        'status' => $seat->status,
+      ];
+    }, $updated);
+    event(new SeatUpdated($seatsData, $auditoriumEventId));
 
     return response()->json([
       'message' => 'Seats updated successfully',
