@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.1",
         "aws/aws-sdk-php": "^3.323",
+        "beyondcode/laravel-websockets": "^1.14",
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^3.8",
         "laravel/framework": "^10.0",

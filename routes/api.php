@@ -162,3 +162,20 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
 });
+
+// Test WebSocket Route
+Route::get('/test-websocket', function () {
+  $message = request('message', 'Hola desde WebSockets!');
+  $data = request('data', ['timestamp' => now()]);
+
+  event(new \App\Events\TestWebSocketEvent($message, $data));
+
+  return response()->json([
+    'status' => 'success',
+    'message' => 'Evento enviado',
+    'data' => [
+      'message' => $message,
+      'data' => $data,
+    ],
+  ]);
+});
