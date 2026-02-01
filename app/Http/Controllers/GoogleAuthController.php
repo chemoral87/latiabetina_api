@@ -40,25 +40,22 @@ class GoogleAuthController extends Controller {
   public function handleGoogleCallback(Request $request) {
     try {
       // Obtener el usuario de Google
-      $googleUser = Socialite::driver('google')->stateless()->user();
+      $googleUser = Socialite::driver('google')->user();
 
       $user = $this->findOrCreateUser($googleUser);
 
       // Generar token JWT
       $token = Auth::guard('api')->login($user);
 
-      // Determinar la URL del frontend basándose en el referer almacenado
-      $referer = session('auth_referer');
+      // Determinar la URL del frontend basándose en el state parameter
       $frontendUrl = config('app.frontend_url'); // default
 
-      if ($referer) {
-        // Extraer el protocolo y host del referer
-        $parsedUrl = parse_url($referer);
-        if (isset($parsedUrl['scheme']) && isset($parsedUrl['host'])) {
-          $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
-          $frontendUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . $port;
+      $state = $request->query('state');
+      if ($state) {
+        $decoded = json_decode(base64_decode($state), true);
+        if (isset($decoded['frontend_url']) && $decoded['frontend_url']) {
+          $frontendUrl = $decoded['frontend_url'];
         }
-        session()->forget('auth_referer');
       }
 
       return redirect()->away("{$frontendUrl}/auth/google/callback?token={$token}");
