@@ -28,10 +28,15 @@ class GoogleAuthController extends Controller {
       }
     }
 
+    // If we still don't have a frontend URL, use the default
+    if (!$frontendUrl) {
+      $frontendUrl = config('app.frontend_url');
+    }
+
     // Store in state parameter for OAuth callback
     $state = base64_encode(json_encode(['frontend_url' => $frontendUrl]));
 
-    return Socialite::driver('google')->with(['state' => $state])->redirect();
+    return Socialite::driver('google')->with(['state' => $state])->stateless()->redirect();
   }
 
   /**
@@ -40,7 +45,7 @@ class GoogleAuthController extends Controller {
   public function handleGoogleCallback(Request $request) {
     try {
       // Obtener el usuario de Google
-      $googleUser = Socialite::driver('google')->user();
+      $googleUser = Socialite::driver('google')->stateless()->user();
 
       $user = $this->findOrCreateUser($googleUser);
 
