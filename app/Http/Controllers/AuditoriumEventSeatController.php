@@ -58,7 +58,7 @@ class AuditoriumEventSeatController extends Controller {
       'auditorium_event_id' => 'required|exists:auditorium_events,id',
       'seat_ids' => 'required|array',
       'seat_ids.*' => 'required|string',
-      'status' => 'nullable|string|in:ocupado,adulto,adolescente,niño,porteador',
+      'status' => 'nullable|string',
     ]);
 
     $auditoriumEventId = $validated['auditorium_event_id'];
@@ -97,12 +97,16 @@ class AuditoriumEventSeatController extends Controller {
         'status' => $seat->status,
       ];
     }, $updatedSeats);
-    event(new SeatUpdated($seatsData, $auditoriumEventId));
+
+    $timestamp = now()->toIso8601String();
+
+    event(new SeatUpdated($seatsData, $auditoriumEventId, $timestamp));
 
     return response()->json([
 
       'success' => 'Asientos actualizados',
       'seats' => $updatedSeats,
+      'timestamp' => $timestamp,
     ]);
   }
 
@@ -110,7 +114,7 @@ class AuditoriumEventSeatController extends Controller {
     $seat = AuditoriumEventSeat::findOrFail($id);
 
     $validated = $request->validate([
-      'status' => 'nullable|string|in:ocupado,adulto,adolecente,niño,porteador',
+      'status' => 'nullable|string',
     ]);
 
     $seat->update($validated);
@@ -124,7 +128,8 @@ class AuditoriumEventSeatController extends Controller {
       'auditorium_event_id' => 'required|exists:auditorium_events,id',
       'seats' => 'required|array',
       'seats.*.seat_id' => 'required|string',
-      'seats.*.status' => 'nullable|string|in:ocupado,adulto,adolecente,niño,porteador',
+      'seats.*.status' => 'nullable|string',
+
     ]);
 
     $auditoriumEventId = $validated['auditorium_event_id'];
@@ -139,7 +144,7 @@ class AuditoriumEventSeatController extends Controller {
           'seat_id' => $seatData['seat_id'],
         ],
         [
-          'status' => $seatData['status'] ?? null,
+          'status' => substr($seatData['status'], 0, 3) ?? null,
           'created_by' => $user->id,
         ]
       );
@@ -149,7 +154,7 @@ class AuditoriumEventSeatController extends Controller {
     // Fire event for real-time updates
     $seatsData = array_map(function ($seat) {
       return [
-        'seat_id' => $seat->seat_id,
+        'id' => $seat->seat_id,
         'status' => $seat->status,
       ];
     }, $updated);
