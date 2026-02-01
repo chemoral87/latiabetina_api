@@ -13,8 +13,25 @@ class GoogleAuthController extends Controller {
   /**
    * Redirect the user to the Google authentication page.
    */
-  public function redirectToGoogle() {
-    return Socialite::driver('google')->stateless()->redirect();
+  public function redirectToGoogle(Request $request) {
+    // Get the frontend URL from query parameter or referer header
+    $frontendUrl = $request->query('frontend_url');
+
+    if (!$frontendUrl) {
+      $referer = $request->header('referer');
+      if ($referer) {
+        $parsedUrl = parse_url($referer);
+        if (isset($parsedUrl['scheme']) && isset($parsedUrl['host'])) {
+          $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+          $frontendUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . $port;
+        }
+      }
+    }
+
+    // Store in state parameter for OAuth callback
+    $state = base64_encode(json_encode(['frontend_url' => $frontendUrl]));
+
+    return Socialite::driver('google')->with(['state' => $state])->redirect();
   }
 
   /**
@@ -30,8 +47,20 @@ class GoogleAuthController extends Controller {
       // Generar token JWT
       $token = Auth::guard('api')->login($user);
 
-      // Redirigir al frontend con el token
-      $frontendUrl = config('app.frontend_url');
+      // Determinar la URL del frontend basándose en el referer almacenado
+      $referer = session('auth_referer');
+      $frontendUrl = config('app.frontend_url'); // default
+
+      if ($referer) {
+        // Extraer el protocolo y host del referer
+        $parsedUrl = parse_url($referer);
+        if (isset($parsedUrl['scheme']) && isset($parsedUrl['host'])) {
+          $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+          $frontendUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . $port;
+        }
+        session()->forget('auth_referer');
+      }
+
       return redirect()->away("{$frontendUrl}/auth/google/callback?token={$token}");
 
     } catch (\Exception $e) {
