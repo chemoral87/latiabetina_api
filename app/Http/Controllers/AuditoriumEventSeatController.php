@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Events\SeatUpdated;
-use App\Http\Resources\DataSetResource;
 use App\Models\AuditoriumEventSeat;
 use App\Models\AuditoriumEventSeatLog;
 use Illuminate\Http\Request;
@@ -20,30 +19,47 @@ class AuditoriumEventSeatController extends Controller {
   public function index(Request $request) {
     $user = $this->user;
 
-    $query = AuditoriumEventSeat::query()
-      ->with(['auditoriumEvent', 'creator']);
+    $auditoriumEventId = $request->get('auditorium_event_id');
+    $last_timestamp = $request->get('last_timestamp');
 
-    $itemsPerPage = $request->get('itemsPerPage');
-    $sortBy = $request->get('sortBy');
-    $sortDesc = $request->get('sortDesc');
+    $query = AuditoriumEventSeatLog::query()
+      ->where('auditorium_event_id', $auditoriumEventId);
 
-    if ($request->has('auditorium_event_id') && !empty($request->get('auditorium_event_id'))) {
-      $query->where('auditorium_event_id', $request->get('auditorium_event_id'));
+    if ($last_timestamp) {
+      $query->where('created_at', '>', \Carbon\Carbon::parse($last_timestamp));
     }
 
-    if ($request->has('status') && !empty($request->get('status'))) {
-      $query->where('status', $request->get('status'));
-    }
+    $seats_log = $query->orderBy('created_at', 'ASC')->get();
 
-    if ($sortBy) {
-      foreach ($sortBy as $index => $column) {
-        $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-        $query->orderBy($column, $sortDirection);
-      }
-    }
+    return response()->json([
+      'seats_log' => $seats_log,
+      'timestamp' => now()->toIso8601String(),
+    ]);
 
-    $seats = $query->paginate($itemsPerPage);
-    return new DataSetResource($seats);
+    // $query = AuditoriumEventSeat::query()
+    //   ->with(['auditoriumEvent', 'creator']);
+
+    // $itemsPerPage = $request->get('itemsPerPage');
+    // $sortBy = $request->get('sortBy');
+    // $sortDesc = $request->get('sortDesc');
+
+    // if ($request->has('auditorium_event_id') && !empty($request->get('auditorium_event_id'))) {
+    //   $query->where('auditorium_event_id', $request->get('auditorium_event_id'));
+    // }
+
+    // if ($request->has('status') && !empty($request->get('status'))) {
+    //   $query->where('status', $request->get('status'));
+    // }
+
+    // if ($sortBy) {
+    //   foreach ($sortBy as $index => $colum n) {
+    //     $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
+    //     $query->orderBy($column, $sortDirection);
+    //   }
+    // }
+
+    // $seats = $query->paginate($itemsPerPage);
+    // return new DataSetResource($seats);
   }
 
   public function show($id) {

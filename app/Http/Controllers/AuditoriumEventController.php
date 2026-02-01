@@ -66,6 +66,8 @@ class AuditoriumEventController extends Controller {
       ->whereNotNull('status')
       ->get();
 
+    $event->timestamp = now()->toIso8601String();
+
     return response()->json($event);
   }
 

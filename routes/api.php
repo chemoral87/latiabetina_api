@@ -102,7 +102,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('auditorium-event-seat')->controller(AuditoriumEventSeatController::class)->group(function () {
-    // Route::get('/', 'index');
+    Route::get('/', 'index');
     // Route::get('/event/{eventId}', 'getByEvent');
     // Route::get('/{id}', 'show');
     Route::post('/', 'store');
