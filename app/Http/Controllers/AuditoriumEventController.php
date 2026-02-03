@@ -23,7 +23,7 @@ class AuditoriumEventController extends Controller {
     $query = AuditoriumEvent::query()
       ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
       ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
-      ->select('auditorium_events.*', 'auditoriums.name as auditorium_name', 'organizations.name as org_name');
+      ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.auditorium_id', 'auditorium_events.org_id', 'auditorium_events.created_at', 'auditorium_events.updated_at', 'auditoriums.name as auditorium_name', 'organizations.name as org_name');
 
     $itemsPerPage = $request->get('itemsPerPage');
     $sortBy = $request->get('sortBy');
@@ -93,10 +93,14 @@ class AuditoriumEventController extends Controller {
     $event = AuditoriumEvent::findOrFail($id);
     $data = $request->validate([
       'event_date' => 'sometimes|date',
-      'config' => 'sometimes|string',
+
       'auditorium_id' => 'sometimes|exists:auditoriums,id',
       'org_id' => 'sometimes|exists:organizations,id',
     ]);
+
+    $auditorium = Auditorium::findOrFail($event->auditorium_id);
+    $data['config'] = $auditorium->config;
+
     $event->update($data);
     return response()->json($event);
   }
