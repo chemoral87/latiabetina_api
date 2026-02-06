@@ -37,6 +37,11 @@ class AuditoriumEventController extends Controller {
       }
     }
 
+    if ($request->has('date') && !empty($request->get('date'))) {
+      $date = \Carbon\Carbon::parse($request->get('date'))->format('Y-m-d');
+      $query->where('auditorium_events.event_date', '>=', $date);
+    }
+
     if ($request->has('org_id') && !empty($request->get('org_id'))) {
       $org_id = $request->get('org_id');
       $query->where('org_id', $org_id);
@@ -49,7 +54,7 @@ class AuditoriumEventController extends Controller {
     $auditoriumEvents = $query->paginate($itemsPerPage);
     return new DataSetResource($auditoriumEvents);
 
-    return AuditoriumEvent::all();
+    // return AuditoriumEvent::all();
   }
 
   public function show($id) {
