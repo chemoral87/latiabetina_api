@@ -31,6 +31,7 @@ class UserController extends Controller {
     }
     if ($filter) { // filter
       $query->where(DB::raw("CONCAT_WS(' ',name, last_name, second_last_name)"), "like", "%" . $filter . "%");
+      $query->orWhere("email", "like", "%" . $filter . "%");
     }
     $users = $query->with("roles")->with("permissions")->paginate($itemsPerPage);
     return new DataSetResource($users);
