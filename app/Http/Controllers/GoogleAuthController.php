@@ -204,11 +204,29 @@ class GoogleAuthController extends Controller {
     $user = User::where('google_id', $googleUser->id)->first();
 
     if ($user) {
-      // Solo actualizar avatar si realmente cambió (evita escritura innecesaria)
+      // Actualizar información del usuario con datos de Google
+      $names = explode(' ', $googleUser->name, 2);
+      $updated = false;
+
+      if ($user->name !== ($names[0] ?? $googleUser->name)) {
+        $user->name = $names[0] ?? $googleUser->name;
+        $updated = true;
+      }
+
+      if ($user->last_name !== ($names[1] ?? '')) {
+        $user->last_name = $names[1] ?? '';
+        $updated = true;
+      }
+
       if ($user->avatar !== $googleUser->avatar) {
         $user->avatar = $googleUser->avatar;
+        $updated = true;
+      }
+
+      if ($updated) {
         $user->save();
       }
+
       return $user;
     }
 
@@ -216,8 +234,11 @@ class GoogleAuthController extends Controller {
     $user = User::where('email', $googleUser->email)->first();
 
     if ($user) {
-      // Vincular cuenta existente con Google (una sola escritura)
+      // Vincular cuenta existente con Google y actualizar información
+      $names = explode(' ', $googleUser->name, 2);
       $user->google_id = $googleUser->id;
+      $user->name = $names[0] ?? $googleUser->name;
+      $user->last_name = $names[1] ?? '';
       $user->avatar = $googleUser->avatar;
       $user->save();
       return $user;
