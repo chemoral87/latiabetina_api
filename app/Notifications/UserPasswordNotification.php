@@ -39,7 +39,7 @@ class UserPasswordNotification extends Notification implements ShouldQueue {
     $password = $this->data["password"];
     return (new MailMessage)
       ->greeting("Hola $name $last_name ")
-      ->line('Bienvenido al Sistema de La Tia Betina!')
+      ->line('Bienvenido al Sistema de Avivamiento Mty !')
       ->line(new HtmlString("Tu contraseña de acceso es <strong>$password</strong>"))
 
       ->action('Iniciar Sesión', url('/login'));
