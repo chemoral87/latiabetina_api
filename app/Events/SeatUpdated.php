@@ -11,15 +11,17 @@ use Illuminate\Queue\SerializesModels;
 class SeatUpdated implements ShouldBroadcast {
   use Dispatchable, InteractsWithSockets, SerializesModels;
 
-  public $seats;
+  public $seatIds;
+  public $status;
   public $auditoriumEventId;
   public $timestamp;
 
   /**
    * Create a new event instance.
    */
-  public function __construct($seats, $auditoriumEventId, $timestamp) {
-    $this->seats = $seats;
+  public function __construct($seatIds, $status, $auditoriumEventId, $timestamp) {
+    $this->seatIds = $seatIds;
+    $this->status = $status;
     $this->auditoriumEventId = $auditoriumEventId;
     $this->timestamp = $timestamp;
   }
@@ -47,9 +49,10 @@ class SeatUpdated implements ShouldBroadcast {
    */
   public function broadcastWith(): array {
     return [
-      'seats' => $this->seats,
-      'auditorium_event_id' => $this->auditoriumEventId,
-      'timestamp' => $this->timestamp,
+      'z' => $this->seatIds,
+      's' => $this->status,
+      // 'i' => $this->auditoriumEventId,
+      't' => $this->timestamp,
     ];
   }
 }

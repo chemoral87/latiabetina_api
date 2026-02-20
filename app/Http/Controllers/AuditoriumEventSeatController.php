@@ -26,40 +26,16 @@ class AuditoriumEventSeatController extends Controller {
       ->where('auditorium_event_id', $auditoriumEventId);
 
     if ($last_timestamp) {
-      $query->where('created_at', '>', \Carbon\Carbon::parse($last_timestamp));
+      $query->where('created_at', '>', \Carbon\Carbon::createFromTimestampMs($last_timestamp));
     }
 
     $seats_log = $query->orderBy('created_at', 'ASC')->get();
 
     return response()->json([
       'seats_log' => $seats_log,
-      'timestamp' => now()->toIso8601String(),
+      'timestamp' => round(microtime(true) * 1000),
     ]);
 
-    // $query = AuditoriumEventSeat::query()
-    //   ->with(['auditoriumEvent', 'creator']);
-
-    // $itemsPerPage = $request->get('itemsPerPage');
-    // $sortBy = $request->get('sortBy');
-    // $sortDesc = $request->get('sortDesc');
-
-    // if ($request->has('auditorium_event_id') && !empty($request->get('auditorium_event_id'))) {
-    //   $query->where('auditorium_event_id', $request->get('auditorium_event_id'));
-    // }
-
-    // if ($request->has('status') && !empty($request->get('status'))) {
-    //   $query->where('status', $request->get('status'));
-    // }
-
-    // if ($sortBy) {
-    //   foreach ($sortBy as $index => $colum n) {
-    //     $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-    //     $query->orderBy($column, $sortDirection);
-    //   }
-    // }
-
-    // $seats = $query->paginate($itemsPerPage);
-    // return new DataSetResource($seats);
   }
 
   public function show($id) {
@@ -71,15 +47,15 @@ class AuditoriumEventSeatController extends Controller {
     $user = $this->user;
 
     $validated = $request->validate([
-      'auditorium_event_id' => 'required|exists:auditorium_events,id',
-      'seat_ids' => 'required|array',
-      'seat_ids.*' => 'required|string',
-      'status' => 'nullable|string',
+      'i' => 'required|exists:auditorium_events,id', // auditorium_event_id
+      'z' => 'required|array', // seat_ids
+      'z.*' => 'required|string',
+      's' => 'nullable|string', // status
     ]);
 
-    $auditoriumEventId = $validated['auditorium_event_id'];
-    $seatIds = $validated['seat_ids'];
-    $status = $validated['status'] ?? null;
+    $auditoriumEventId = $validated['i'];
+    $seatIds = $validated['z'];
+    $status = $validated['s'] ?? null;
 
     $updatedSeats = [];
 
@@ -105,24 +81,16 @@ class AuditoriumEventSeatController extends Controller {
       'created_by' => $user->id,
     ]);
 
-    // Fire event for real-time updates
-    $seatsData = array_map(function ($seat) {
-      return [
-        'auditorium_event_id' => $seat->auditorium_event_id,
-        'seat_id' => $seat->seat_id,
-        'status' => $seat->status,
-      ];
-    }, $updatedSeats);
+    $timestamp = round(microtime(true) * 1000);
 
-    $timestamp = now()->toIso8601String();
-
-    event(new SeatUpdated($seatsData, $auditoriumEventId, $timestamp));
+    event(new SeatUpdated($seatIds, $status, $auditoriumEventId, $timestamp));
 
     return response()->json([
 
       'success' => 'Asientos actualizados',
-      'seats' => $updatedSeats,
-      'timestamp' => $timestamp,
+      's' => $status,
+      'z' => $seatIds,
+      't' => $timestamp,
     ]);
   }
 

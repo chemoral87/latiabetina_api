@@ -23,7 +23,8 @@ class AuditoriumEventController extends Controller {
     $query = AuditoriumEvent::query()
       ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
       ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
-      ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.auditorium_id', 'auditorium_events.org_id', 'auditorium_events.created_at', 'auditorium_events.updated_at', 'auditoriums.name as auditorium_name', 'organizations.name as org_name');
+      ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.auditorium_id', 'auditorium_events.org_id',
+        'auditoriums.name as auditorium_name', 'organizations.name as org_name');
 
     $itemsPerPage = $request->get('itemsPerPage');
     $sortBy = $request->get('sortBy');
@@ -71,7 +72,7 @@ class AuditoriumEventController extends Controller {
       ->whereNotNull('status')
       ->get();
 
-    $event->timestamp = now()->toIso8601String();
+    $event->timestamp = round(microtime(true) * 1000);
 
     return response()->json($event);
   }
