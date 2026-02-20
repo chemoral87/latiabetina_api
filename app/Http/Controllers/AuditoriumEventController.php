@@ -66,11 +66,15 @@ class AuditoriumEventController extends Controller {
       ->where('auditorium_events.id', $id)
       ->firstOrFail();
 
-    $event->seats = AuditoriumEvent::find($id)
+    $seats = AuditoriumEvent::find($id)
       ->hasMany(\App\Models\AuditoriumEventSeat::class, 'auditorium_event_id')
       ->select("seat_id", "status")
       ->whereNotNull('status')
       ->get();
+
+    $event->seats = $seats->groupBy('status')->map(function ($group) {
+      return $group->pluck('seat_id')->toArray();
+    });
 
     $event->timestamp = round(microtime(true) * 1000);
 
