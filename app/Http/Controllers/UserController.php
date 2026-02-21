@@ -55,13 +55,13 @@ class UserController extends Controller {
     // add password
 
     //User::create($req + ['password' => Hash::make('admin')]);
-    User::create($req + ['password' => $hashed_random_password]);
+    $user = User::create($req + ['password' => $hashed_random_password]);
 
     // notify password
     Notification::route("mail", $request->get("email"))
       ->notify(new UserPasswordNotification($req + ['password' => $random_password, 'cellphone' => $request->get("cellphone")]));
 
-    return ['success' => __('messa.user_create')];
+    return ['success' => __('messa.user_create'), 'id' => $user->id];
   }
 
   public function update(Request $request, $id) {
