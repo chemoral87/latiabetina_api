@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Events\SeatUpdated;
+use App\Models\AuditoriumEvent;
 use App\Models\AuditoriumEventSeat;
 use App\Models\AuditoriumEventSeatLog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -56,6 +58,17 @@ class AuditoriumEventSeatController extends Controller {
     $auditoriumEventId = $validated['i'];
     $seatIds = $validated['z'];
     $status = $validated['s'] ?? null;
+
+    // Validate event date
+    $auditoriumEvent = AuditoriumEvent::findOrFail($auditoriumEventId);
+    $eventDate = Carbon::parse($auditoriumEvent->event_date);
+    $today = Carbon::now()->subHours(6);
+
+    if ($today->format('Y-m-d') > $eventDate->format('Y-m-d')) {
+      return response()->json([
+        'warning' => 'Ya nose puede modificar evento',
+      ]);
+    }
 
     $updatedSeats = [];
 
