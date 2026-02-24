@@ -24,7 +24,8 @@ class AuditoriumEventController extends Controller {
       ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
       ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
       ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.auditorium_id', 'auditorium_events.org_id',
-        'auditoriums.name as auditorium_name', 'organizations.name as org_name');
+        'auditoriums.name as auditorium_name', 'organizations.name as org_name')
+      ->whereIn('auditorium_events.org_id', $orgIds);
 
     $itemsPerPage = $request->get('itemsPerPage');
     $sortBy = $request->get('sortBy');
