@@ -6,6 +6,7 @@
 use App\Http\Controllers\AuditoriumController;
 use App\Http\Controllers\AuditoriumEventController;
 use App\Http\Controllers\AuditoriumEventSeatController;
+use App\Http\Controllers\AuditoriumEventSeatLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChurchEventController;
 use App\Http\Controllers\GoogleAuthController;
@@ -109,6 +110,11 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     // Route::post('/batch', 'updateBatch');
     // Route::put('/{id}', 'update');
     // Route::delete('/{id}', 'destroy');
+  });
+
+  
+  Route::prefix('auditorium-event-seat-log')->controller(AuditoriumEventSeatLogController::class)->group(function () {
+    Route::get('/', 'index');
   });
 
   Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
