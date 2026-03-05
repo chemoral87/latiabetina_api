@@ -79,13 +79,19 @@ ln -sfn "$RELEASE_PATH" "$CURRENT_LINK" || error_exit "Symlink update failed"
 
 # Restarting services
 echo -e "${YELLOW}🔄 Restarting services...${NC}"
-# Depending on the setup, you might need to restart php-fpm or queue workers
-# systemctl reload php8.2-fpm || true
+
+# Restart PHP-FPM to clear OPcache
+sudo systemctl reload php8.2-fpm || echo -e "${RED}⚠️ Could not reload php8.2-fpm${NC}"
+
+# Restart queue workers
 php artisan queue:restart || true
 
-# If Reverb is used, it might need a restart. 
-# Assuming it's running via PM2 or a systemd service.
-# pm2 restart reverb-api || true
+# Restart Reverb via Supervisor or specific service
+# sudo supervisorctl restart reverb || echo -e "${RED}⚠️ Could not restart Reverb service${NC}"
+
+# Reload nginx
+echo -e "${YELLOW}🔄 Reloading nginx...${NC}"
+sudo nginx -t && sudo systemctl reload nginx || echo -e "${RED}⚠️ Could not reload nginx${NC}"
 
 # Keep only last $KEEP_RELEASES
 echo -e "${YELLOW}🧹 Cleaning old releases (keeping last $KEEP_RELEASES)...${NC}"
