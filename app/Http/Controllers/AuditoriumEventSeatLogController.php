@@ -33,7 +33,7 @@ class AuditoriumEventSeatLogController extends Controller
             });
 
         $userIds = $logs->pluck('created_by')->unique()->filter()->values();
-        $users = User::whereIn('id', $userIds)->get(['id', 'name', 'last_name']);
+        $users = User::whereIn('id', $userIds)->get(['id', 'name', 'last_name', 'email']);
 
         return response()->json([
             'seatsLog' => $logs,
