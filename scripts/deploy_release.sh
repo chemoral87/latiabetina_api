@@ -64,6 +64,11 @@ ln -sfn "$SHARED_DIR/storage" "$RELEASE_PATH/storage" || error_exit "Failed to l
 echo -e "${YELLOW}📦 Installing composer dependencies...${NC}"
 composer install --no-dev --optimize-autoloader --no-interaction || error_exit "Composer install failed"
 
+# Fix permissions for Laravel storage and cache directories
+echo -e "${YELLOW}🔑 Setting permissions...${NC}"
+sudo chgrp -R www-data "$SHARED_DIR/storage" "$RELEASE_PATH/bootstrap/cache" || true
+sudo chmod -R ug+rwx "$SHARED_DIR/storage" "$RELEASE_PATH/bootstrap/cache" || true
+
 # Database migrations
 echo -e "${YELLOW}🗄️ Running migrations...${NC}"
 php artisan migrate --force || error_exit "Migrations failed"
