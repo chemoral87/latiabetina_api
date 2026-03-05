@@ -1,0 +1,72 @@
+name: Deploy API to VPS
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      rollback_release:
+        description: "Rollback to release (leave empty for normal deploy)"
+        required: false
+        default: ""
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy scripts to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "scripts/"
+          target: "/var/www/backend/"
+          strip_components: 0
+
+      - name: Make scripts executable and trust GitHub host key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            chmod +x /var/www/backend/scripts/*.sh
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy or Rollback via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          command_timeout: 30m
+          script: |
+            if [ "${{ github.event.inputs.rollback_release }}" != "" ]; then
+              bash /var/www/backend/scripts/rollback_release.sh "${{ github.event.inputs.rollback_release }}"
+            else
+              bash /var/www/backend/scripts/deploy_release.sh ${{ github.sha }}
+            fi
+
+      - name: List available releases (for manual rollback)
+        if: github.event_name == 'workflow_dispatch'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            echo "=== Available releases ==="
+            ls -1t /var/www/backend/releases
+            echo "=== Current release ==="
+            readlink /var/www/backend/current
