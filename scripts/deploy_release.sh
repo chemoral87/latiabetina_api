@@ -34,6 +34,10 @@ mkdir -p "$SHARED_DIR/storage/framework/sessions"
 mkdir -p "$SHARED_DIR/storage/framework/views"
 mkdir -p "$SHARED_DIR/storage/logs"
 
+# Clear storage logs
+echo -e "${YELLOW}🧹 Clearing storage logs...${NC}"
+rm -rf "$SHARED_DIR/storage/logs/"*.log || true
+
 # Clone repo
 echo -e "${YELLOW}📦 Cloning repository...${NC}"
 git clone --depth 1 "$REPO_URL" "$RELEASE_PATH" || error_exit "Git clone failed"
