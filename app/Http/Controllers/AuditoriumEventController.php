@@ -49,9 +49,16 @@ class AuditoriumEventController extends Controller {
       $query->where('org_id', $org_id);
     }
 
-    // if ($filter) {
-    //   $query->where('auditoriums.name', 'like', "%{$filter}%");
-    // }
+    if ($filter && is_array($filter)) {
+      if (count($filter) === 2) {
+        $startDate = \Carbon\Carbon::parse($filter[0])->startOfDay()->format('Y-m-d H:i:s');
+        $endDate = \Carbon\Carbon::parse($filter[1])->endOfDay()->format('Y-m-d H:i:s');
+        $query->whereBetween('auditorium_events.event_date', [$startDate, $endDate]);
+      } else if (count($filter) === 1) {
+        $date = \Carbon\Carbon::parse($filter[0])->format('Y-m-d');
+        $query->whereDate('auditorium_events.event_date', $date);
+      }
+    }
 
     $auditoriumEvents = $query->paginate($itemsPerPage);
     return new DataSetResource($auditoriumEvents);
