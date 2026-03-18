@@ -17,6 +17,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TestimonyController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ChurchMemberController;
+use App\Http\Controllers\ConsoSheetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -158,6 +160,22 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::post("/", 'create');
     Route::put("/{id}", 'update');
     Route::delete("/{id}", 'delete');
+  });
+
+  Route::prefix('conso-sheet')->controller(ConsoSheetController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'delete');
+  });
+
+  Route::prefix('church-member')->controller(ChurchMemberController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+    Route::post('/', 'create');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'delete');
   });
 
   Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
