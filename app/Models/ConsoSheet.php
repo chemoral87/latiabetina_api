@@ -10,6 +10,7 @@ class ConsoSheet extends Model
     use HasFactory;
 
     protected $fillable = [
+        'org_id',
         'folio_number',
         'date',
         'how_did_you_hear',
@@ -17,6 +18,7 @@ class ConsoSheet extends Model
         'comments',
         'special_request',
         'consolidator_id',
+        'created_by',
     ];
 
     protected $casts = [
@@ -31,5 +33,15 @@ class ConsoSheet extends Model
     public function consolidator()
     {
         return $this->belongsTo(\App\Models\User::class, 'consolidator_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(\App\Models\Organization::class, 'org_id');
     }
 }

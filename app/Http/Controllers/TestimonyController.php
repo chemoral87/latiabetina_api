@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\Testimony;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TestimonyController extends Controller {
+  use AppliesOrgPermissionScope;
+
   protected $user;
 
   public function __construct() {
@@ -16,8 +19,6 @@ class TestimonyController extends Controller {
   }
 
   public function index(Request $request) {
-    $orgIds = $this->user->getOrgsByPermission('testimony-index');
-
     $filter = $request->get("filter");
     $status = $request->get("status");
 
@@ -32,12 +33,7 @@ class TestimonyController extends Controller {
       $query->whereNull("status");
     }
 
-    if (empty($orgIds)) {
-      // user has no orgs with permission — return empty result
-      $query->whereRaw('0 = 1');
-    } else {
-      $query->whereIn('org_id', $orgIds);
-    }
+    $query = $this->applyOrgPermissionScope($query, $this->user, 'testimony-index');
 
     $testimonies = $query->paginate($request->get('itemsPerPage'));
     return new DataSetResource($testimonies);

@@ -2,17 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Models\ConsoSheet;
 use Illuminate\Http\Request;
 
+use Tymon\JWTAuth\Facades\JWTAuth;
+
 class ConsoSheetController extends Controller
 {
+    use AppliesOrgPermissionScope;
+
+      protected $user;
+
+  public function __construct() {
+    $this->user = JWTAuth::user();
+  }
     public function index(Request $request)
     {
-        $query = ConsoSheet::query();
+        $query = ConsoSheet::with(['creator', 'organization']);
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
 
         if ($request->has('filter') && !empty($request->filter)) {
             $query->where('folio_number', 'like', '%' . $request->filter . '%');
+        }
+
+        if ($request->has('org_id') && !empty($request->org_id)) {
+            $query->where('org_id', $request->org_id);
         }
 
         $itemsPerPage = $request->get('itemsPerPage', 10);
@@ -35,13 +50,14 @@ class ConsoSheetController extends Controller
 
     public function show($id)
     {
-        $sheet = ConsoSheet::findOrFail($id);
+        $sheet = ConsoSheet::with(['creator', 'organization'])->findOrFail($id);
         return response()->json($sheet);
     }
 
     public function create(Request $request)
     {
         $request->validate([
+            'org_id'       => 'required|exists:organizations,id',
             'folio_number' => 'required|string|unique:conso_sheets',
             'date'         => 'required|date',
             'how_did_you_hear'           => 'nullable|string|max:255',
@@ -51,7 +67,10 @@ class ConsoSheetController extends Controller
             'consolidator_id' => 'nullable|exists:users,id',
         ]);
 
-        $sheet = ConsoSheet::create($request->all());
+        $data = $request->all();
+        $data['created_by'] = $this->user->id;
+
+        $sheet = ConsoSheet::create($data);
         return response()->json($sheet, 201);
     }
 
@@ -60,6 +79,7 @@ class ConsoSheetController extends Controller
         $sheet = ConsoSheet::findOrFail($id);
         
         $request->validate([
+            'org_id'       => 'sometimes|exists:organizations,id',
             'folio_number' => 'required|string|unique:conso_sheets,folio_number,' . $id,
             'date'         => 'required|date',
             'how_did_you_hear'           => 'nullable|string|max:255',

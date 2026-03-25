@@ -2,25 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\Auditorium;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditoriumController extends Controller {
+  use AppliesOrgPermissionScope;
+
   protected $user;
 
   public function __construct() {
     $this->user = JWTAuth::user();
   }
   public function index(Request $request) {
-    $user = $this->user;
-    $orgIds = $user->getOrgsByPermission('auditorium-index');
-
     $query = Auditorium::query()
       ->leftJoin('organizations', 'auditoriums.org_id', '=', 'organizations.id')
       ->select('auditoriums.*', 'organizations.name as org_name')
-      ->whereIn('auditoriums.org_id', $orgIds);
+      ;
+
+    $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-index', 'auditoriums.org_id');
 
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
