@@ -9,8 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Queue\Middleware\RateLimited;
+use Illuminate\Support\Facades\RateLimiter;
 
 class SendWhatsAppMessageJob implements ShouldQueue
 {
@@ -27,11 +26,8 @@ class SendWhatsAppMessageJob implements ShouldQueue
      *
      * @var int
      */
-    public $tries = 5;
+    public $tries = 100;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct($phone, $message, $botUrl, $botPassword, $isDebug = false)
     {
         $this->phone = $phone;
@@ -39,44 +35,43 @@ class SendWhatsAppMessageJob implements ShouldQueue
         $this->botUrl = $botUrl;
         $this->botPassword = $botPassword;
         $this->isDebug = $isDebug;
+        $this->onQueue('whatsapp');
     }
 
-    /**
-     * Get the middleware the job should pass through.
-     *
-     * @return array
-     */
-    public function middleware(): array
-    {
-        return [new RateLimited('whatsapp-messages')];
-    }
-
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
-        $finalMessage = $this->message;
-        if ($this->isDebug) {
-            $finalMessage .= "\n\n[Debug: " . now()->toDateTimeString() . "]";
-        }
+        $executed = RateLimiter::attempt(
+            'whatsapp-messages',
+            1, // Max 1 attempt
+            function () {
+                $finalMessage = $this->message;
+                if ($this->isDebug) {
+                    $finalMessage .= "\n\n[Debug: " . now()->toDateTimeString() . "]";
+                }
 
-        try {
-            $response = Http::withHeaders([
-                'x-api-password' => $this->botPassword
-            ])->post("{$this->botUrl}/api/send-message", [
-                'phone' => $this->phone,
-                'message' => $finalMessage,
-            ]);
+                try {
+                    $response = Http::withHeaders([
+                        'x-api-password' => $this->botPassword
+                    ])->post("{$this->botUrl}/api/send-message", [
+                        'phone' => $this->phone,
+                        'message' => $finalMessage,
+                    ]);
 
-            if ($response->failed()) {
-                throw new \Exception("Bot returned error: " . $response->body());
-            }
+                    if ($response->failed()) {
+                        throw new \Exception("Bot returned error: " . $response->body());
+                    }
+                } catch (\Exception $e) {
+                    Log::error("WhatsApp Job Failed: " . $e->getMessage());
+                    throw $e;
+                }
+            },
+            0 // Decay seconds
+        );
 
-            // Log::info("WhatsApp message sent to {$this->phone}");
-        } catch (\Exception $e) {
-            Log::error("WhatsApp Job Failed: " . $e->getMessage());
-            throw $e;
+        if (! $executed) {
+            // Could not obtain lock, release the job back to the queue with a 1 second delay
+            $this->release(1);
+            return;
         }
     }
 }

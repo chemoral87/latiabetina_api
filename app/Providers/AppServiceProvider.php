@@ -19,12 +19,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\RateLimiter::for('whatsapp-messages', function ($job) {
-            return (object) [
-                'key' => 'whatsapp-messages',
-                'maxAttempts' => 1,
-                'decayMinutes' => 2 / 60,
-            ];
-        });
+        //
     }
 }

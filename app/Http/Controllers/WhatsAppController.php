@@ -44,7 +44,7 @@ class WhatsAppController extends Controller
                 $request->message,
                 $this->botUrl,
                 $this->botPassword,
-                $request->boolean('isDebug') || env('WHATSAPP_DEBUG', false)
+                env('WHATSAPP_DEBUG', false)
             );
 
             return response()->json(['status' => 'queued', 'message' => 'Message has been queued for sending.']);
