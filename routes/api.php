@@ -178,14 +178,19 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::delete('/{id}', 'delete');
   });
 
-  Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get("/{id}", 'show');
-    Route::put('/{id}/status', 'updateStatus');
-    Route::put("/{id}", "update");
+    Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
+      Route::get('/', 'index');
+      Route::get("/{id}", 'show');
+      Route::put('/{id}/status', 'updateStatus');
+      Route::put("/{id}", "update");
+    });
+  
+    Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
+      Route::get('/status', 'status');
+      Route::post('/send', 'sendMessage');
+    });
+  
   });
-
-});
 
 // Test WebSocket Route
 Route::get('/test-websocket', function () {
