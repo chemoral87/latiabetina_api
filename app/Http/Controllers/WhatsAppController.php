@@ -39,14 +39,15 @@ class WhatsAppController extends Controller
         ]);
 
         try {
-            $response = Http::withHeaders([
-                'x-api-password' => $this->botPassword
-            ])->post("{$this->botUrl}/api/send-message", [
-                'phone' => $request->phone,
-                'message' => $request->message,
-            ]);
+            \App\Jobs\SendWhatsAppMessageJob::dispatch(
+                $request->phone,
+                $request->message,
+                $this->botUrl,
+                $this->botPassword,
+                $request->boolean('isDebug') || env('WHATSAPP_DEBUG', false)
+            );
 
-            return response()->json($response->json(), $response->status());
+            return response()->json(['status' => 'queued', 'message' => 'Message has been queued for sending.']);
         } catch (\Exception $e) {
             Log::error("WhatsApp Bot Send Error: " . $e->getMessage());
             return response()->json(['error' => 'Failed to send message: ' . $e->getMessage()], 500);
