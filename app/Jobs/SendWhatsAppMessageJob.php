@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use App\Models\WhatsappMessageLog;
 
 class SendWhatsAppMessageJob implements ShouldQueue
 {
@@ -26,7 +27,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
      *
      * @var int
      */
-    public $tries = 100;
+    public $tries = 1;
 
     public function __construct($phone, $message, $botUrl, $botPassword, $isDebug = false)
     {
@@ -36,6 +37,23 @@ class SendWhatsAppMessageJob implements ShouldQueue
         $this->botPassword = $botPassword;
         $this->isDebug = $isDebug;
         $this->onQueue('whatsapp');
+    }
+
+    private function resolveSender(): string
+    {
+        try {
+            $response = Http::withHeaders([
+                'x-api-password' => $this->botPassword
+            ])->timeout(5)->get("{$this->botUrl}/me");
+
+            if ($response->successful()) {
+                return $response->json('number', config('app.name', 'system'));
+            }
+        } catch (\Exception $e) {
+            // Fall back gracefully if the bot is unreachable
+        }
+
+        return config('app.name', 'system');
     }
 
     public function handle(): void
@@ -53,19 +71,52 @@ class SendWhatsAppMessageJob implements ShouldQueue
                     $response = Http::withHeaders([
                         'x-api-password' => $this->botPassword
                     ])->post("{$this->botUrl}/api/send-message", [
-                        'phone' => $this->phone,
+                        'phone'   => $this->phone,
                         'message' => $finalMessage,
                     ]);
 
                     if ($response->failed()) {
-                        throw new \Exception("Bot returned error: " . $response->body());
+                        $errorMessage = $response->json('error') ?? $response->body();
+
+                        // Fallback check for technical initialization errors
+                        if (str_contains($errorMessage, 'getChat') || str_contains($errorMessage, 'undefined')) {
+                            $errorMessage = "WhatsApp Bot not authenticated. Please scan the QR code.";
+                        }
+
+                        throw new \Exception("Bot returned error: " . $errorMessage);
                     }
+
+                    WhatsappMessageLog::create([
+                        'queue_name'    => 'whatsapp',
+                        'sender'        => $this->resolveSender(),
+                        'receiver'      => $this->phone,
+                        'body'          => $finalMessage,
+                        'success'       => true,
+                        'error_message' => null,
+                    ]);
                 } catch (\Exception $e) {
-                    Log::error("WhatsApp Job Failed: " . $e->getMessage());
-                    throw $e;
+                    $errorMessage = $e->getMessage();
+
+                    // Humanize connection errors (e.g., when the server is stopped)
+                    if (str_contains($errorMessage, 'cURL error 7') || str_contains($errorMessage, 'Failed to connect')) {
+                        $errorMessage = "WhatsApp Bot server is unreachable. Please ensure the bot server is running.";
+                    }
+
+                    Log::error("WhatsApp Job Failed: " . $errorMessage);
+
+                    WhatsappMessageLog::create([
+                        'queue_name'    => 'whatsapp',
+                        'sender'        => $this->resolveSender(),
+                        'receiver'      => $this->phone,
+                        'body'          => $finalMessage,
+                        'success'       => false,
+                        'error_message' => $errorMessage,
+                    ]);
+
+                    // Do NOT re-throw — job should fail silently after one attempt
                 }
             },
-            0 // Decay seconds
+            1 // Decay seconds
         );
 
         if (! $executed) {
@@ -73,5 +124,8 @@ class SendWhatsAppMessageJob implements ShouldQueue
             $this->release(1);
             return;
         }
+
+        // Wait 1 second before finishing to ensure a gap between jobs on this worker
+        sleep(2);
     }
 }

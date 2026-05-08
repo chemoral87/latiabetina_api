@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class WhatsappMessageLog extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'queue_name',
+        'sender',
+        'receiver',
+        'body',
+        'success',
+        'error_message',
+    ];
+
+    protected $casts = [
+        'success' => 'boolean',
+    ];
+}
