@@ -22,13 +22,6 @@ class SendWhatsAppMessageJob implements ShouldQueue
     protected $botPassword;
     protected $isDebug;
 
-    /**
-     * The number of times the job may be attempted.
-     *
-     * @var int
-     */
-    public $tries = 1;
-
     public function __construct($phone, $message, $botUrl, $botPassword, $isDebug = false)
     {
         $this->phone = $phone;
