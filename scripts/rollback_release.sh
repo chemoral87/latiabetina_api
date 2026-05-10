@@ -38,6 +38,8 @@ ln -sfn "$ROLLBACK_TO" "$CURRENT_LINK" || error_exit "Symlink update failed"
 # Restart services
 echo -e "${YELLOW}🔄 Restarting services...${NC}"
 cd "$CURRENT_LINK"
+php artisan config:clear || true
+php artisan optimize || true
 
 # Restart PHP-FPM to clear OPcache
 sudo systemctl reload php8.2-fpm || echo -e "${RED}⚠️ Could not reload php8.2-fpm${NC}"

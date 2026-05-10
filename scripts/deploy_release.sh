@@ -79,6 +79,7 @@ php artisan migrate --force || error_exit "Migrations failed"
 
 # Optimize Laravel
 echo -e "${YELLOW}⚡ Optimizing Laravel...${NC}"
+php artisan config:clear || error_exit "Config clear failed"
 php artisan optimize || error_exit "Optimization failed"
 php artisan view:cache || error_exit "View cache failed"
 
