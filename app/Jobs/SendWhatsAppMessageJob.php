@@ -18,14 +18,16 @@ class SendWhatsAppMessageJob implements ShouldQueue
 
     protected $phone;
     protected $message;
+    protected $mediaUrl;
     protected $botUrl;
     protected $botPassword;
     protected $isDebug;
 
-    public function __construct($phone, $message, $botUrl, $botPassword, $isDebug = false)
+    public function __construct($phone, $message, $mediaUrl, $botUrl, $botPassword, $isDebug = false)
     {
         $this->phone = $phone;
         $this->message = $message;
+        $this->mediaUrl = $mediaUrl;
         $this->botUrl = $botUrl;
         $this->botPassword = $botPassword;
         $this->isDebug = $isDebug;
@@ -61,12 +63,18 @@ class SendWhatsAppMessageJob implements ShouldQueue
                 }
 
                 try {
-                    $response = Http::withHeaders([
-                        'x-api-password' => $this->botPassword
-                    ])->post("{$this->botUrl}/api/send-message", [
+                    $endpoint = $this->mediaUrl ? '/api/send-image' : '/api/send-message';
+                    $payload = [
                         'phone'   => $this->phone,
                         'message' => $finalMessage,
-                    ]);
+                    ];
+                    if ($this->mediaUrl) {
+                        $payload['mediaUrl'] = $this->mediaUrl;
+                    }
+
+                    $response = Http::withHeaders([
+                        'x-api-password' => $this->botPassword
+                    ])->post("{$this->botUrl}{$endpoint}", $payload);
 
                     if ($response->failed()) {
                         $errorMessage = $response->json('error') ?? $response->body();
@@ -84,6 +92,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                         'sender'        => $this->resolveSender(),
                         'receiver'      => $this->phone,
                         'body'          => $finalMessage,
+                        'media_url'     => $this->mediaUrl,
                         'success'       => true,
                         'error_message' => null,
                     ]);
@@ -102,6 +111,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                         'sender'        => $this->resolveSender(),
                         'receiver'      => $this->phone,
                         'body'          => $finalMessage,
+                        'media_url'     => $this->mediaUrl,
                         'success'       => false,
                         'error_message' => $errorMessage,
                     ]);

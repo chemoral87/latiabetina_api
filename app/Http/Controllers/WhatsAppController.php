@@ -36,12 +36,14 @@ class WhatsAppController extends Controller
         $request->validate([
             'phone' => 'required|string',
             'message' => 'required|string',
+            'mediaUrl' => 'nullable|url',
         ]);
 
         try {
             \App\Jobs\SendWhatsAppMessageJob::dispatch(
                 $request->phone,
                 $request->message,
+                $request->mediaUrl,
                 $this->botUrl,
                 $this->botPassword,
                 env('WHATSAPP_DEBUG', false)

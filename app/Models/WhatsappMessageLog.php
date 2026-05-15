@@ -14,6 +14,7 @@ class WhatsappMessageLog extends Model
         'sender',
         'receiver',
         'body',
+        'media_url',
         'success',
         'error_message',
     ];
