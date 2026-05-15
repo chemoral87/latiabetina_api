@@ -8,6 +8,7 @@ use App\Models\Auditorium;
 use App\Models\AuditoriumEvent;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
 
 class AuditoriumEventController extends Controller {
   use AppliesOrgPermissionScope;
@@ -21,7 +22,7 @@ class AuditoriumEventController extends Controller {
     $query = AuditoriumEvent::query()
       ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
       ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
-      ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.auditorium_id', 'auditorium_events.org_id',
+      ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.time', 'auditorium_events.auditorium_id', 'auditorium_events.org_id',
         'auditoriums.name as auditorium_name', 'organizations.name as org_name');
 
     $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-index', 'auditorium_events.org_id');
@@ -31,21 +32,33 @@ class AuditoriumEventController extends Controller {
     $sortDesc = $request->get('sortDesc');
     $filter = $request->get('filter');
 
+    if ($request->has('org_id') && !empty($request->get('org_id'))) {
+      $org_id = $request->get('org_id');
+      $query->where('org_id', $org_id);
+    }
+
+    if ($request->has('date') && !empty($request->get('date'))) {
+      $dateTime = \Carbon\Carbon::parse($request->get('date'))->subMinutes(105);
+      $date = $dateTime->format('Y-m-d');
+      $time = $dateTime->format('H:i');
+
+      $query->where(function ($q) use ($date, $time) {
+        $q->where('auditorium_events.event_date', '>', $date)
+          ->orWhere(function ($q2) use ($date, $time) {
+            $q2->where('auditorium_events.event_date', $date)
+              ->where('auditorium_events.time', '>=', $time);
+          });
+      })->orderBy('event_date', 'ASC')->orderBy('time', 'ASC');
+
+      $event = $query->first();
+      return response()->json(['data' => $event ? [$event] : []]);
+    }
+
     if ($sortBy) {
       foreach ($sortBy as $index => $column) {
         $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
         $query = $query->orderBy($column, $sortDirection);
       }
-    }
-
-    if ($request->has('date') && !empty($request->get('date'))) {
-      $date = \Carbon\Carbon::parse($request->get('date'))->format('Y-m-d');
-      $query->where('auditorium_events.event_date', '>=', $date);
-    }
-
-    if ($request->has('org_id') && !empty($request->get('org_id'))) {
-      $org_id = $request->get('org_id');
-      $query->where('org_id', $org_id);
     }
 
     if ($filter && is_array($filter)) {
@@ -61,8 +74,6 @@ class AuditoriumEventController extends Controller {
 
     $auditoriumEvents = $query->paginate($itemsPerPage);
     return new DataSetResource($auditoriumEvents);
-
-    // return AuditoriumEvent::all();
   }
 
   public function show($id) {
@@ -95,6 +106,7 @@ class AuditoriumEventController extends Controller {
 
     $data = $request->validate([
       'event_date' => 'required|date',
+      'time' => 'required|date_format:H:i|in:09:45,12:00,20:00',
 
       'auditorium_id' => 'required|exists:auditoriums,id',
       'org_id' => 'required|exists:organizations,id',
@@ -110,6 +122,7 @@ class AuditoriumEventController extends Controller {
     $event = AuditoriumEvent::findOrFail($id);
     $data = $request->validate([
       'event_date' => 'sometimes|date',
+      'time' => 'sometimes|date_format:H:i|in:09:45,12:00,20:00',
 
       'auditorium_id' => 'sometimes|exists:auditoriums,id',
       'org_id' => 'sometimes|exists:organizations,id',
