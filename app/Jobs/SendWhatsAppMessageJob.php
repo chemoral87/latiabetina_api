@@ -123,12 +123,12 @@ class SendWhatsAppMessageJob implements ShouldQueue
         );
 
         if (! $executed) {
-            // Could not obtain lock, release the job back to the queue with a 1 second delay
-            $this->release(1);
+            // Could not obtain lock, release the job back to the queue with a random delay
+            $this->release(rand(8, 15));
             return;
         }
 
-        // Wait 1 second before finishing to ensure a gap between jobs on this worker
-        sleep(2);
+        // Wait a random amount of time before finishing to ensure a gap between jobs on this worker
+        sleep(rand(8, 15));
     }
 }
