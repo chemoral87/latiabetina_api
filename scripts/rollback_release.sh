@@ -44,6 +44,10 @@ php artisan optimize || true
 # Restart PHP-FPM to clear OPcache
 sudo systemctl reload php8.2-fpm || echo -e "${RED}⚠️ Could not reload php8.2-fpm${NC}"
 
+# Clear stale queued jobs (serialized with old config values)
+echo -e "${YELLOW}🧹 Clearing stale queued jobs...${NC}"
+php artisan queue:clear --queue=whatsapp || true
+
 # Restart queue workers
 php artisan queue:restart || true
 
