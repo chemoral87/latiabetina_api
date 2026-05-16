@@ -13,8 +13,8 @@ class WhatsAppController extends Controller
 
     public function __construct()
     {
-        $this->botUrl = env('WHATSAPP_BOT_URL', 'http://localhost:3007');
-        $this->botPassword = env('WHATSAPP_BOT_PASSWORD');
+        $this->botUrl = config('services.whatsapp.bot_url');
+        $this->botPassword = config('services.whatsapp.password');
     }
 
     public function status()
@@ -46,7 +46,7 @@ class WhatsAppController extends Controller
                 $request->mediaUrl,
                 $this->botUrl,
                 $this->botPassword,
-                env('WHATSAPP_DEBUG', false)
+                config('services.whatsapp.debug', false)
             );
 
             return response()->json(['status' => 'queued', 'message' => 'Message has been queued for sending.']);

@@ -37,4 +37,10 @@ return [
     'redirect' => env('GOOGLE_REDIRECT_URI'),
   ],
 
+  'whatsapp' => [
+    'bot_url'  => env('WHATSAPP_BOT_URL', 'http://localhost:3007'),
+    'password' => env('WHATSAPP_BOT_PASSWORD'),
+    'debug'    => env('WHATSAPP_DEBUG', false),
+  ],
+
 ];
