@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\WhatsappMessageLog;
 
 class WhatsAppController extends Controller
 {
@@ -34,8 +35,8 @@ class WhatsAppController extends Controller
     public function sendMessage(Request $request)
     {
         $request->validate([
-            'phone' => 'required|string',
-            'message' => 'required|string',
+            'phone'    => 'required|string',
+            'message'  => 'required|string',
             'mediaUrl' => 'nullable|url',
         ]);
 
@@ -54,5 +55,39 @@ class WhatsAppController extends Controller
             Log::error("WhatsApp Bot Send Error: " . $e->getMessage());
             return response()->json(['error' => 'Failed to send message: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Return a paginated list of WhatsappMessageLogs with optional filters.
+     *
+     * Query params:
+     *   sender   - filter by sender (partial match)
+     *   receiver - filter by receiver (partial match)
+     *   success  - filter by success (0 | 1)
+     *   per_page - items per page (default 15)
+     *   page     - page number
+     */
+    public function logs(Request $request)
+    {
+        $query = WhatsappMessageLog::query()
+            ->with('creator:id,name,email')
+            ->orderByDesc('created_at');
+
+        if ($request->filled('sender')) {
+            $query->where('sender', 'like', '%' . $request->sender . '%');
+        }
+
+        if ($request->filled('receiver')) {
+            $query->where('receiver', 'like', '%' . $request->receiver . '%');
+        }
+
+        if ($request->has('success') && $request->success !== '' && $request->success !== null) {
+            $query->where('success', (bool) $request->success);
+        }
+
+        $perPage = (int) $request->get('per_page', 15);
+        $perPage = min($perPage, 100); // cap at 100
+
+        return response()->json($query->paginate($perPage));
     }
 }

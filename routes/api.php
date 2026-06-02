@@ -188,6 +188,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
       Route::get('/status', 'status');
       Route::post('/send', 'sendMessage');
+      Route::get('/logs', 'logs');
     });
   
   });

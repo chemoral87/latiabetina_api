@@ -17,9 +17,17 @@ class WhatsappMessageLog extends Model
         'media_url',
         'success',
         'error_message',
+        'sent_at',
+        'created_by',
     ];
 
     protected $casts = [
         'success' => 'boolean',
+        'sent_at' => 'datetime',
     ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
