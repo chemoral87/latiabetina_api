@@ -33,7 +33,11 @@ class AuthController extends Controller {
   }
 
   public function logout() {
-    auth()->logout();
+    try {
+      auth()->logout();
+    } catch (\Exception $e) {
+      // Token might be invalid or expired, but logout still succeeds
+    }
 
     return response()->json(['message' => 'Successfully logged out']);
   }

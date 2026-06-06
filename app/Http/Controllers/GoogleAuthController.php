@@ -16,6 +16,7 @@ class GoogleAuthController extends Controller {
   public function redirectToGoogle(Request $request) {
     // Get the frontend URL from query parameter or referer header
     $frontendUrl = $request->query('frontend_url');
+    $redirect = $request->query('redirect'); // Captura el redirect path
 
     if (!$frontendUrl) {
       $referer = $request->header('referer');
@@ -33,8 +34,11 @@ class GoogleAuthController extends Controller {
       $frontendUrl = config('app.frontend_url');
     }
 
-    // Store in state parameter for OAuth callback
-    $state = base64_encode(json_encode(['frontend_url' => $frontendUrl]));
+    // Store in state parameter for OAuth callback (incluyendo redirect)
+    $state = base64_encode(json_encode([
+      'frontend_url' => $frontendUrl,
+      'redirect' => $redirect // Guarda el redirect en el state
+    ]));
 
     return Socialite::driver('google')->with(['state' => $state])->stateless()->redirect();
   }
@@ -54,6 +58,7 @@ class GoogleAuthController extends Controller {
 
       // Determinar la URL del frontend basándose en el state parameter
       $frontendUrl = config('app.frontend_url'); // default
+      $redirect = null; // Variable para almacenar el redirect path
 
       $state = $request->query('state');
       if ($state) {
@@ -61,9 +66,18 @@ class GoogleAuthController extends Controller {
         if (isset($decoded['frontend_url']) && $decoded['frontend_url']) {
           $frontendUrl = $decoded['frontend_url'];
         }
+        if (isset($decoded['redirect']) && $decoded['redirect']) {
+          $redirect = $decoded['redirect'];
+        }
       }
 
-      return redirect()->away("{$frontendUrl}/auth/google/callback?token={$token}");
+      // Construir URL de callback con redirect si existe
+      $callbackUrl = "{$frontendUrl}/auth/google/callback?token={$token}";
+      if ($redirect) {
+        $callbackUrl .= "&redirect=" . urlencode($redirect);
+      }
+
+      return redirect()->away($callbackUrl);
 
     } catch (\Exception $e) {
       $frontendUrl = config('app.frontend_url');
