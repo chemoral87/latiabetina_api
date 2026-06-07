@@ -209,3 +209,25 @@ Route::get('/test-websocket', function () {
     ],
   ]);
 });
+
+Route::get('/test-google-user', function () {
+  $user = \App\Models\User::orderBy('id', 'desc')->first();
+  $token = \Illuminate\Support\Facades\Auth::guard('api')->login($user);
+  
+  $permissions_orgs = [];
+  $orgs = [];
+  try {
+      foreach ($user->profiles as $profile) {
+        $orgCode = $profile->organization ? $profile->organization->short_code : null;
+      }
+  } catch (\Exception $e) {
+      return ['error' => 'profiles error: ' . $e->getMessage()];
+  }
+  
+  return [
+    'user_id' => $user->id,
+    'token' => $token,
+    // Try to get UserResource to see if it fails
+    'resource' => new \App\Http\Resources\UserResource($user)
+  ];
+});

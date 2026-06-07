@@ -203,6 +203,7 @@ class GoogleAuthController extends Controller {
       ]);
 
     } catch (\Exception $e) {
+      \Illuminate\Support\Facades\Log::error('Error validando token de Google: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
       return response()->json([
         'status' => 'error',
         'message' => 'Token inválido: ' . $e->getMessage(),

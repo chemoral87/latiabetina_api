@@ -26,9 +26,14 @@ class AuthController extends Controller {
   }
 
   public function me() {
+    $user = auth()->user();
+
+    if (!$user) {
+      return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
     return response()->json(
-      new UserResource(auth()->user())
+      new UserResource($user)
     );
   }
 
