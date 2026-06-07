@@ -7,11 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-// // use Tymon\JWTAuth\JWTAuth;
-
 class AuthController extends Controller {
   public function login() {
-    // https://medium.com/mesan-digital/tutorial-5-how-to-build-a-laravel-5-4-jwt-authentication-api-with-e-mail-verification-61d3f356f823
     $credentials = request(['email', 'password']);
 
     if (!$token = auth()->attempt($credentials)) {

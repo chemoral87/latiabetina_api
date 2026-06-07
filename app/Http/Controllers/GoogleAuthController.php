@@ -102,42 +102,11 @@ class GoogleAuthController extends Controller {
         return response()->json(['error' => 'Invalid token'], 401);
       }
 
-      // Build permissions_org and orgs as in UserResource
-      $permissions_orgs = [];
-      $orgs = [];
-      foreach ($user->profiles as $profile) {
-        $orgCode = $profile->organization->short_code;
-        $orgs[] = [
-          'id' => $profile->org_id,
-          'name' => $profile->organization->name,
-          'short_code' => $orgCode,
-        ];
-        foreach ($profile->roles as $role) {
-          foreach ($role->permissions as $permission) {
-            $permissions_orgs[$permission->name][$profile->org_id] = true;
-          }
-        }
-        foreach ($profile->permissions as $permission) {
-          $permissions_orgs[$permission->name][$profile->org_id] = true;
-        }
-      }
-      foreach ($permissions_orgs as &$orgIds) {
-        $orgIds = array_keys($orgIds);
-      }
       return response()->json([
         'access_token' => $token,
         'token_type' => 'bearer',
         'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
-        'user' => [
-          'id' => $user->id,
-          'name' => $user->name,
-          'last_name' => $user->last_name,
-          'email' => $user->email,
-          'avatar' => $user->avatar,
-          'google_id' => $user->google_id,
-          'permissions_org' => $permissions_orgs,
-          'orgs' => $orgs,
-        ],
+        'user' => new \App\Http\Resources\UserResource($user),
       ]);
     } catch (\Exception $e) {
       return response()->json(['error' => 'Invalid token: ' . $e->getMessage()], 401);
@@ -164,42 +133,11 @@ class GoogleAuthController extends Controller {
         ], 401);
       }
 
-      // Build permissions_org and orgs as in UserResource
-      $permissions_orgs = [];
-      $orgs = [];
-      foreach ($user->profiles as $profile) {
-        $orgCode = $profile->organization->short_code;
-        $orgs[] = [
-          'id' => $profile->org_id,
-          'name' => $profile->organization->name,
-          'short_code' => $orgCode,
-        ];
-        foreach ($profile->roles as $role) {
-          foreach ($role->permissions as $permission) {
-            $permissions_orgs[$permission->name][$profile->org_id] = true;
-          }
-        }
-        foreach ($profile->permissions as $permission) {
-          $permissions_orgs[$permission->name][$profile->org_id] = true;
-        }
-      }
-      foreach ($permissions_orgs as &$orgIds) {
-        $orgIds = array_keys($orgIds);
-      }
       return response()->json([
         'access_token' => $request->token,
         'token_type' => 'bearer',
         'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
-        'user' => [
-          'id' => $user->id,
-          'name' => $user->name,
-          'last_name' => $user->last_name,
-          'email' => $user->email,
-          'avatar' => $user->avatar,
-          'google_id' => $user->google_id,
-          'permissions_org' => $permissions_orgs,
-          'orgs' => $orgs,
-        ],
+        'user' => new \App\Http\Resources\UserResource($user),
       ]);
 
     } catch (\Exception $e) {
