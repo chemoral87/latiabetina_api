@@ -13,6 +13,8 @@ class ChurchEventController extends Controller {
   use AppliesOrgPermissionScope;
 
   protected $user;
+  protected $path = '/church-events/';
+
   public function __construct() {
     $this->user = JWTAuth::user();
   }
@@ -30,8 +32,6 @@ class ChurchEventController extends Controller {
     $testimonies = $query->paginate($request->get('itemsPerPage'));
     return new DataSetResource($testimonies);
 
-    return ChurchEvent::with(['organization', 'creator'])->get();
-
   }
 
   public function show($id) {
@@ -39,7 +39,7 @@ class ChurchEventController extends Controller {
   }
 
   public function store(Request $request) {
-
+    \Illuminate\Support\Facades\Log::info("ChurchEventController@store", $request->all());
     // $orgIds = $this->user->getOrgsByPermission('church-event-index');
     $created_by = $this->user->id;
 
@@ -51,14 +51,19 @@ class ChurchEventController extends Controller {
       'start_date' => 'required|date',
       'end_date' => 'nullable|date|after_or_equal:start_date',
       'time_start' => 'nullable|date_format:H:i',
-      'url_image' => 'nullable|string|max:255',
+      'url_image' => 'nullable|string',
       'org_id' => 'required|exists:organizations,id',
       // 'created_by' => 'required|exists:users,id',
     ]);
 
+    if ($request->filled('url_image')) {
+      $path = "ORG-" . $data['org_id'] . $this->path;
+      $data['url_image'] = saveS3Blob($request->url_image, $path);
+    }
+
     // Generate slug_name if not provided
     if (empty($data['slug_name'])) {
-      $yearMonth = date('ym');
+      $yearMonth = date('ymd');
       $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . $yearMonth;
     }
 
@@ -79,10 +84,16 @@ class ChurchEventController extends Controller {
       'start_date' => 'sometimes|date',
       'end_date' => 'nullable|date|after_or_equal:start_date',
       'time_start' => 'nullable|date_format:H:i',
-      'url_image' => 'nullable|string|max:255',
+      'url_image' => 'nullable|string',
       'org_id' => 'sometimes|exists:organizations,id',
       'created_by' => 'sometimes|exists:users,id',
     ]);
+
+    if ($request->filled('url_image')) {
+      $orgId = $data['org_id'] ?? $event->org_id;
+      $path = "ORG-" . $orgId . $this->path;
+      $data['url_image'] = saveS3Blob($request->url_image, $path, $event->url_image);
+    }
 
     // Regenerate slug_name if name is updated but slug_name is not provided
     if (isset($data['name']) && !isset($data['slug_name'])) {

@@ -3,7 +3,8 @@
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 function createVerificationCode($length = 10) {
   $characters = '0123456789';
@@ -36,7 +37,8 @@ function saveBlob($blob, $path, $file_to_delete = null) {
   $d = app()->environment();
   $folder = Carbon::now()->format("Ymd") . "/";
   $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.jpg';
-  $intervention = Image::make($blob)->encode('webp');
+  $manager = new ImageManager(new Driver());
+  $intervention = $manager->read($blob)->toWebp();
   // storage in public storage
   $result = Storage::disk('public')->put($name, $intervention);
   // $result = Storage::disk('s3')->put($name, $intervention);
@@ -53,22 +55,39 @@ function saveBlob($blob, $path, $file_to_delete = null) {
   return $name;
 }
 
-function saveS3Blob($blob, $path, $file_to_delete = null) {
+function saveS3Blob($blob, string $path, ?string $file_to_delete = null): ?string {
+  \Illuminate\Support\Facades\Log::info("saveS3Blob started", ['path' => $path, 'has_blob' => !empty($blob)]);
   $d = app()->environment();
   $folder = Carbon::now()->format("Ymd") . "/";
-  $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.jpg';
-  $intervention = Image::make($blob)->encode('webp');
-  $result = Storage::disk('s3')->put($name, $intervention);
-  // https://www.positronx.io/laravel-image-resize-upload-with-intervention-image-package/
-  // https://laracasts.com/discuss/channels/laravel/resize-an-image-before-upload-to-s3
-
-  if ($file_to_delete) {
-    try {
-      Storage::disk('s3')->delete($file_to_delete);
-    } catch (Exception $e) {
+  $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.webp';
+  // \Illuminate\Support\Facades\Log::info("Generated S3 path: {$name}");
+  
+  try {
+    $manager = new ImageManager(new Driver());
+    $image = $manager->read($blob);
+    $intervention = $image->toWebp(80);
+    // \Illuminate\Support\Facades\Log::info("Image processed successfully");
+    
+    $isUploaded = Storage::disk('s3')->put($name, (string) $intervention);
+    // \Illuminate\Support\Facades\Log::info("S3 upload result: " . ($isUploaded ? "Success" : "Failure"));
+    
+    if (!$isUploaded) {
+      \Illuminate\Support\Facades\Log::error("Failed to upload image to S3: {$name}");
+      return null;
     }
+
+    if ($file_to_delete) {
+      try {
+        Storage::disk('s3')->delete($file_to_delete);
+      } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::warning("Failed to delete old S3 image ({$file_to_delete}): " . $e->getMessage());
+      }
+    }
+    return $name;
+  } catch (\Exception $e) {
+    \Illuminate\Support\Facades\Log::error("Error in saveS3Blob: " . $e->getMessage());
+    return null;
   }
-  return $name;
 }
 
 function awsUrlS3($path, $random = true) {
@@ -129,11 +148,11 @@ function saveAmazonFile($file, $path, $old_file = null) {
   $full_name = $d . $path . "/" . uniqid() . "." . $extension;
   // https://www.positronx.io/laravel-image-resize-upload-with-intervention-image-package/
   // https://laracasts.com/discuss/channels/laravel/resize-an-image-before-upload-to-s3
-  $img = Image::make($file);
+  $manager = new ImageManager(new Driver());
+  $img = $manager->read($file);
+  $encoded = $img->encodeByExtension($extension);
 
-  $resource = $img->stream()->detach();
-
-  $path = Storage::disk('s3')->put($full_name, $resource);
+  $path = Storage::disk('s3')->put($full_name, (string) $encoded);
 
   if ($old_file != null) {
     try {
