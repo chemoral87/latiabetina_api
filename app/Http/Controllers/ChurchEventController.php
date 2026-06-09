@@ -108,6 +108,15 @@ class ChurchEventController extends Controller {
 
   public function destroy($id) {
     $event = ChurchEvent::findOrFail($id);
+    
+    if (!empty($event->url_image)) {
+      try {
+        \Illuminate\Support\Facades\Storage::disk('s3')->delete($event->url_image);
+      } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::warning("Failed to delete S3 image ({$event->url_image}): " . $e->getMessage());
+      }
+    }
+
     $event->delete();
     return response()->json(['message' => 'Church event deleted']);
   }
