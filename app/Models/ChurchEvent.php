@@ -18,11 +18,17 @@ class ChurchEvent extends Model {
     'created_by',
   ];
 
+  protected $hidden = ['url_image'];
+
   protected $casts = [
-    'start_date' => 'date',
-    'end_date' => 'date',
-    'time_start' => 'datetime',
+    'start_date' => 'date:Y-m-d',
+    'end_date' => 'date:Y-m-d',
+    'time_start' => 'datetime:H:i',
   ];
+
+  public function getUrlImageS3Attribute() {
+    return temporaryUrlS3($this->url_image);
+  }
 
   public function organization() {
     return $this->belongsTo(Organization::class, 'org_id');

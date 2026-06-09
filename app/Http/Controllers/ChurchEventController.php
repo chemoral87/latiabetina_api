@@ -30,12 +30,15 @@ class ChurchEventController extends Controller {
     $query = $this->applyOrgPermissionScope($query, $this->user, 'church-event-index');
 
     $testimonies = $query->paginate($request->get('itemsPerPage'));
+
     return new DataSetResource($testimonies);
 
   }
 
   public function show($id) {
-    return ChurchEvent::with(['organization', 'creator'])->findOrFail($id);
+    return ChurchEvent::with(['organization', 'creator'])->findOrFail($id)
+      ->makeVisible('url_image')
+      ->append('url_image_s3');
   }
 
   public function store(Request $request) {
@@ -56,7 +59,7 @@ class ChurchEventController extends Controller {
       // 'created_by' => 'required|exists:users,id',
     ]);
 
-    if ($request->filled('url_image')) {
+    if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
       $path = "ORG-" . $data['org_id'] . $this->path;
       $data['url_image'] = saveS3Blob($request->url_image, $path);
     }
@@ -70,7 +73,7 @@ class ChurchEventController extends Controller {
     $data['created_by'] = $created_by;
 
     $event = ChurchEvent::create($data);
-    return response()->json($event, 201);
+    return response()->json($event->makeVisible('url_image')->append('url_image_s3'), 201);
   }
 
   public function update(Request $request, $id) {
@@ -89,7 +92,7 @@ class ChurchEventController extends Controller {
       'created_by' => 'sometimes|exists:users,id',
     ]);
 
-    if ($request->filled('url_image')) {
+    if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
       $orgId = $data['org_id'] ?? $event->org_id;
       $path = "ORG-" . $orgId . $this->path;
       $data['url_image'] = saveS3Blob($request->url_image, $path, $event->url_image);
@@ -103,7 +106,7 @@ class ChurchEventController extends Controller {
     }
 
     $event->update($data);
-    return response()->json($event);
+    return response()->json($event->makeVisible('url_image')->append('url_image_s3'));
   }
 
   public function destroy($id) {
