@@ -35,6 +35,62 @@ class ChurchEventController extends Controller {
 
   }
 
+  public function publicIndex(Request $request) {
+ 
+    $start_date = $request->get("start_date");
+    $end_date = $request->get("end_date");
+    $org_id = $request->get("org_id");
+
+    $org_id_decoded = null;
+    if ($org_id) {
+      $decoded = base64_decode($org_id, true);
+      if ($decoded !== false && is_numeric($decoded)) {
+        $org_id_decoded = (int) $decoded;
+      }
+    }
+
+    $query = queryServerSide($request, ChurchEvent::query());
+    $query->where('org_id', $org_id_decoded);
+
+    if ($start_date) {
+      $query->whereDate("start_date", ">=", $start_date);
+    }
+
+    if ($end_date) {
+      $query->whereDate("start_date", "<=", $end_date);
+    }
+
+    $events = $query->orderBy('start_date', 'desc')
+      ->select([
+        'name',
+        'slug_name',
+        'location',
+        'description',
+        'start_date',
+        'end_date',
+        'time_start',
+        'url_image',
+        'created_at',
+      ])
+      ->get();
+
+    $events = $events->map(function ($item) {
+      return [
+        'name' => $item->name,
+        'slug_name' => $item->slug_name,
+        'location' => $item->location,
+        'description' => $item->description,
+        'start_date' => $item->start_date,
+        'end_date' => $item->end_date,
+        'time_start' => $item->time_start,
+        'url_image_s3' => $item->url_image_s3,
+        'created_at' => $item->created_at,
+      ];
+    });
+
+    return response()->json($events);
+  }
+
   public function show($id) {
     return ChurchEvent::with(['organization', 'creator'])->findOrFail($id)
       ->makeVisible('url_image')

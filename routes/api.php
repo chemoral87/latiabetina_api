@@ -49,6 +49,10 @@ Route::group(['middleware' => ['api']], function () {
     Route::post('/', 'store');
   });
 
+  Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
+    Route::get('/public', 'publicIndex');
+  });
+
   Route::prefix('user')->controller(UserController::class)->group(function () {
     Route::post('register', 'register');
     Route::post('send-code', 'sendResetCode')->middleware('throttle:3,1');
