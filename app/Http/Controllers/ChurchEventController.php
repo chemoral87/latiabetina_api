@@ -5,178 +5,179 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\ChurchEvent;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
-class ChurchEventController extends Controller {
-  use AppliesOrgPermissionScope;
+class ChurchEventController extends Controller 
+{
+    use AppliesOrgPermissionScope;
 
-  protected $user;
-  protected $path = '/church-events/';
+    protected string $path = '/church-events/';
 
-  public function __construct() {
-    $this->user = JWTAuth::user();
-  }
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): DataSetResource
+    {
+        $query = queryServerSide($request, ChurchEvent::query());
 
-  public function index(Request $request) {
-    $filter = $request->get("filter");
+        if ($filter = $request->get('filter')) {
+            $query->where('name', 'like', "%{$filter}%");
+        }
 
-    $query = queryServerSide($request, ChurchEvent::query());
-    if ($filter) {
-      $query->where("name", "like", "%" . $filter . "%");
+        $query = $this->applyOrgPermissionScope($query, $request->user(), 'church-event-index');
+        $testimonies = $query->paginate($request->get('itemsPerPage'));
+
+        return new DataSetResource($testimonies);
     }
 
-    $query = $this->applyOrgPermissionScope($query, $this->user, 'church-event-index');
+    /**
+     * Display a public listing of the resource filtered by organization.
+     */
+    public function publicIndex(Request $request): JsonResponse
+    {
+        $orgId = $request->get('org_id');
+        $decodedOrgId = null;
 
-    $testimonies = $query->paginate($request->get('itemsPerPage'));
+        if ($orgId) {
+            $decoded = base64_decode($orgId, true);
+            if ($decoded !== false && is_numeric($decoded)) {
+                $decodedOrgId = (int) $decoded;
+            }
+        }
 
-    return new DataSetResource($testimonies);
+        $query = queryServerSide($request, ChurchEvent::query())
+            ->where('org_id', $decodedOrgId)
+            ->when($request->get('start_date'), fn($q, $date) => $q->whereDate('start_date', '>=', $date))
+            ->when($request->get('end_date'), fn($q, $date) => $q->whereDate('start_date', '<=', $date))
+            ->orderBy('start_date', 'desc');
 
-  }
+        $events = $query->get([
+            'id', 'name', 'slug_name', 'location', 'description', 
+            'start_date', 'end_date', 'time_start', 'url_image', 
+            'org_id', 'created_by', 'created_at', 'updated_at'
+        ]);
 
-  public function publicIndex(Request $request) {
- 
-    $start_date = $request->get("start_date");
-    $end_date = $request->get("end_date");
-    $org_id = $request->get("org_id");
-
-    $org_id_decoded = null;
-    if ($org_id) {
-      $decoded = base64_decode($org_id, true);
-      if ($decoded !== false && is_numeric($decoded)) {
-        $org_id_decoded = (int) $decoded;
-      }
-    }
-
-    $query = queryServerSide($request, ChurchEvent::query());
-    $query->where('org_id', $org_id_decoded);
-
-    if ($start_date) {
-      $query->whereDate("start_date", ">=", $start_date);
-    }
-
-    if ($end_date) {
-      $query->whereDate("start_date", "<=", $end_date);
-    }
-
-    $events = $query->orderBy('start_date', 'desc')
-      ->select([
-        'name',
-        'slug_name',
-        'location',
-        'description',
-        'start_date',
-        'end_date',
-        'time_start',
-        'url_image',
-        'created_at',
-      ])
-      ->get();
-
-    $events = $events->map(function ($item) {
-      return [
-        'name' => $item->name,
-        'slug_name' => $item->slug_name,
-        'location' => $item->location,
-        'description' => $item->description,
-        'start_date' => $item->start_date,
-        'end_date' => $item->end_date,
-        'time_start' => $item->time_start,
-        'url_image_s3' => $item->url_image_s3,
-        'created_at' => $item->created_at,
-      ];
+        // Transform collection efficiently while ensuring custom attributes are appended
+        $transformedEvents = $events->map(function ($event) {
+            $event->makeVisible('url_image')->append('url_image_s3');
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'slug_name' => $event->slug_name,
+                'location' => $event->location,
+                'description' => $event->description,
+                'start_date' => $event->start_date?->format('Y-m-d'),
+                'end_date' => $event->end_date?->format('Y-m-d'),
+                'time_start' => $event->time_start?->format('H:i'),
+                'org_id' => $event->org_id,
+                'created_by' => $event->created_by,
+                'url_image_s3' => $event->url_image_s3,
+                'created_at' => $event->created_at,
+                'updated_at' => $event->updated_at,
+            ];
     });
 
-    return response()->json($events);
-  }
-
-  public function show($id) {
-    return ChurchEvent::with(['organization', 'creator'])->findOrFail($id)
-      ->makeVisible('url_image')
-      ->append('url_image_s3');
-  }
-
-  public function store(Request $request) {
-    \Illuminate\Support\Facades\Log::info("ChurchEventController@store", $request->all());
-    // $orgIds = $this->user->getOrgsByPermission('church-event-index');
-    $created_by = $this->user->id;
-
-    $data = $request->validate([
-      'name' => 'required|string|max:255',
-      'slug_name' => 'nullable|string|unique:church_events,slug_name|max:255',
-      'location' => 'nullable|string|max:255',
-      'description' => 'nullable|string',
-      'start_date' => 'required|date',
-      'end_date' => 'nullable|date|after_or_equal:start_date',
-      'time_start' => 'nullable|date_format:H:i',
-      'url_image' => 'nullable|string',
-      'org_id' => 'required|exists:organizations,id',
-      // 'created_by' => 'required|exists:users,id',
-    ]);
-
-    if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
-      $path = "ORG-" . $data['org_id'] . $this->path;
-      $data['url_image'] = saveS3Blob($request->url_image, $path);
+        return response()->json($transformedEvents);
     }
 
-    // Generate slug_name if not provided
-    if (empty($data['slug_name'])) {
-      $yearMonth = date('ymd');
-      $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . $yearMonth;
+    /**
+     * Display the specified resource.
+     */
+    public function show(ChurchEvent $churchEvent): ChurchEvent
+    {
+        return $churchEvent->load(['organization', 'creator'])
+            ->makeVisible('url_image')
+            ->append('url_image_s3');
     }
 
-    $data['created_by'] = $created_by;
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        Log::info('ChurchEventController@store', $request->all());
 
-    $event = ChurchEvent::create($data);
-    return response()->json($event->makeVisible('url_image')->append('url_image_s3'), 201);
-  }
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug_name' => 'nullable|string|unique:church_events,slug_name|max:255',
+            'location' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'time_start' => 'nullable|date_format:H:i',
+            'url_image' => 'nullable|string',
+            'org_id' => 'required|exists:organizations,id',
+        ]);
 
-  public function update(Request $request, $id) {
-    $event = ChurchEvent::findOrFail($id);
+        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+            $path = "ORG-{$data['org_id']}{$this->path}";
+            $data['url_image'] = saveS3Blob($request->url_image, $path);
+        }
 
-    $data = $request->validate([
-      'name' => 'sometimes|string|max:255',
-      'slug_name' => 'nullable|string|unique:church_events,slug_name,' . $id . '|max:255',
-      'location' => 'nullable|string|max:255',
-      'description' => 'nullable|string',
-      'start_date' => 'sometimes|date',
-      'end_date' => 'nullable|date|after_or_equal:start_date',
-      'time_start' => 'nullable|date_format:H:i',
-      'url_image' => 'nullable|string',
-      'org_id' => 'sometimes|exists:organizations,id',
-      'created_by' => 'sometimes|exists:users,id',
-    ]);
+        if (empty($data['slug_name'])) {
+            $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . date('ymd');
+        }
 
-    if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
-      $orgId = $data['org_id'] ?? $event->org_id;
-      $path = "ORG-" . $orgId . $this->path;
-      $data['url_image'] = saveS3Blob($request->url_image, $path, $event->url_image);
+        $data['created_by'] = $request->user()->id;
+
+        $event = ChurchEvent::create($data);
+
+        return response()->json($event->makeVisible('url_image')->append('url_image_s3'), 201);
     }
 
-    // Regenerate slug_name if name is updated but slug_name is not provided
-    if (isset($data['name']) && !isset($data['slug_name'])) {
-      $yearMonth = date('ym');
-      $orgId = $data['org_id'] ?? $event->org_id;
-      $data['slug_name'] = Str::slug($data['name']) . '-' . $orgId . '-' . $yearMonth;
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, ChurchEvent $churchEvent): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'slug_name' => 'nullable|string|unique:church_events,slug_name,' . $churchEvent->id . '|max:255',
+            'location' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'sometimes|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'time_start' => 'nullable|date_format:H:i',
+            'url_image' => 'nullable|string',
+            'org_id' => 'sometimes|exists:organizations,id',
+            'created_by' => 'sometimes|exists:users,id',
+        ]);
+
+        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+            $orgId = $data['org_id'] ?? $churchEvent->org_id;
+            $path = "ORG-{$orgId}{$this->path}";
+            $data['url_image'] = saveS3Blob($request->url_image, $path, $churchEvent->url_image);
+        }
+
+        if (isset($data['name']) && !isset($data['slug_name'])) {
+            $orgId = $data['org_id'] ?? $churchEvent->org_id;
+            $data['slug_name'] = Str::slug($data['name']) . '-' . $orgId . '-' . date('ym');
+        }
+
+        $churchEvent->update($data);
+
+        return response()->json($churchEvent->makeVisible('url_image')->append('url_image_s3'));
     }
 
-    $event->update($data);
-    return response()->json($event->makeVisible('url_image')->append('url_image_s3'));
-  }
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(ChurchEvent $churchEvent): JsonResponse
+    {
+        if (!empty($churchEvent->url_image)) {
+            try {
+                Storage::disk('s3')->delete($churchEvent->url_image);
+            } catch (\Exception $e) {
+                Log::warning("Failed to delete S3 image ({$churchEvent->url_image}): " . $e->getMessage());
+            }
+        }
 
-  public function destroy($id) {
-    $event = ChurchEvent::findOrFail($id);
-    
-    if (!empty($event->url_image)) {
-      try {
-        \Illuminate\Support\Facades\Storage::disk('s3')->delete($event->url_image);
-      } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::warning("Failed to delete S3 image ({$event->url_image}): " . $e->getMessage());
-      }
+        $churchEvent->delete();
+
+        return response()->json(['message' => 'Church event deleted']);
     }
-
-    $event->delete();
-    return response()->json(['message' => 'Church event deleted']);
-  }
 }

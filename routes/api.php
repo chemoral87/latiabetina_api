@@ -125,10 +125,10 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
     Route::get('/', 'index');
-    Route::get('/{id}', 'show');
+    Route::get('/{churchEvent}', 'show');
     Route::post('/', 'store');
-    Route::put('/{id}', 'update');
-    Route::delete('/{id}', 'destroy');
+    Route::put('/{churchEvent}', 'update');
+    Route::delete('/{churchEvent}', 'destroy');
   });
 
   Route::prefix('permission')->controller(PermissionController::class)->group(function () {
