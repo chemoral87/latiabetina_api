@@ -89,7 +89,8 @@ class ChurchEventController extends Controller
      */
     public function show(ChurchEvent $churchEvent): ChurchEvent
     {
-        return $churchEvent->load(['organization', 'creator'])
+       // return $churchEvent->load(['organization', 'creator'])
+         return $churchEvent
             ->makeVisible('url_image')
             ->append('url_image_s3');
     }
