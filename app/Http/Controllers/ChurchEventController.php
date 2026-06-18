@@ -56,8 +56,8 @@ class ChurchEventController extends Controller
         $query = queryServerSide($request, ChurchEvent::query())
             ->where('org_id', $decodedOrgId)
             ->when($request->get('start_date'), fn($q, $date) => $q->whereDate('start_date', '>=', $date))
-            ->when($request->get('end_date'), fn($q, $date) => $q->whereDate('start_date', '<=', $date))
-            ->orderBy('start_date', 'desc');
+           // ->when($request->get('end_date'), fn($q, $date) => $q->whereDate('start_date', '<=', $date))
+            ->orderBy('end_date', 'asc')->orderBy('time_start', 'asc');
 
         $events = $query->get([
             'id', 'name', 'slug_name', 'location', 'description', 
