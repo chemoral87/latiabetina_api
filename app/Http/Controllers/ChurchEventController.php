@@ -62,7 +62,7 @@ class ChurchEventController extends Controller
         $events = $query->get([
             'id', 'name', 'slug_name', 'location', 'description', 
             'start_date', 'end_date', 'time_start', 'url_image', 
-            'org_id', 'created_by', 'created_at', 'updated_at'
+            'classification', 'org_id', 'created_by', 'created_at', 'updated_at'
         ]);
 
         // Transform collection efficiently while ensuring custom attributes are appended
@@ -80,6 +80,7 @@ class ChurchEventController extends Controller
                 'org_id' => $event->org_id,
                 'created_by' => $event->created_by,
                 'url_image_s3' => $event->url_image_s3,
+                'classification' => $event->classification,
                 'created_at' => $event->created_at,
                 'updated_at' => $event->updated_at,
             ];
@@ -115,6 +116,7 @@ class ChurchEventController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'time_start' => 'nullable|date_format:H:i',
             'url_image' => 'nullable|string',
+            'classification' => 'nullable|string|in:jv3s,general,jv3s-teen,jv3s-legado',
             'org_id' => 'required|exists:organizations,id',
         ]);
 
@@ -125,6 +127,12 @@ class ChurchEventController extends Controller
 
         if (empty($data['slug_name'])) {
             $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . date('ymd');
+
+            if (ChurchEvent::where('slug_name', $data['slug_name'])->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'slug_name' => [__('validation.unique', ['attribute' => 'slug_name'])],
+                ]);
+            }
         }
 
         $data['created_by'] = $request->user()->id;
@@ -148,6 +156,7 @@ class ChurchEventController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'time_start' => 'nullable|date_format:H:i',
             'url_image' => 'nullable|string',
+            'classification' => 'nullable|string|in:jv3s,general,jv3s-teen,jv3s-legado',
             'org_id' => 'sometimes|exists:organizations,id',
             'created_by' => 'sometimes|exists:users,id',
         ]);
@@ -161,6 +170,12 @@ class ChurchEventController extends Controller
         if (isset($data['name']) && !isset($data['slug_name'])) {
             $orgId = $data['org_id'] ?? $churchEvent->org_id;
             $data['slug_name'] = Str::slug($data['name']) . '-' . $orgId . '-' . date('ym');
+
+            if (ChurchEvent::where('slug_name', $data['slug_name'])->where('id', '!=', $churchEvent->id)->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'slug_name' => [__('validation.unique', ['attribute' => 'slug_name'])],
+                ]);
+            }
         }
 
         $churchEvent->update($data);

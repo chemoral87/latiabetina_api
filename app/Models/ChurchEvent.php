@@ -14,6 +14,7 @@ class ChurchEvent extends Model {
     'end_date',
     'time_start',
     'url_image',
+    'classification',
     'org_id',
     'created_by',
   ];
