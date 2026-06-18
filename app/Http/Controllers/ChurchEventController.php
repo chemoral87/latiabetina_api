@@ -28,6 +28,10 @@ class ChurchEventController extends Controller
             $query->where('name', 'like', "%{$filter}%");
         }
 
+        if ($orgId = $request->get('org_id')) {
+            $query->where('org_id', $orgId);
+        }
+
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'church-event-index');
         $testimonies = $query->paginate($request->get('itemsPerPage'));
 
