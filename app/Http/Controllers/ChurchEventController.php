@@ -55,13 +55,13 @@ class ChurchEventController extends Controller
 
         $query = queryServerSide($request, ChurchEvent::query())
             ->where('org_id', $decodedOrgId)
-            ->when($request->get('start_date'), fn($q, $date) => $q->whereDate('start_date', '>=', $date))
-           // ->when($request->get('end_date'), fn($q, $date) => $q->whereDate('start_date', '<=', $date))
-            ->orderBy('end_date', 'asc')->orderBy('time_start', 'asc');
+            ->when($request->get('publish_date'), fn($q, $date) => $q->whereDate('publish_date', '>=', $date))
+           // ->when($request->get('event_date'), fn($q, $date) => $q->whereDate('publish_date', '<=', $date))
+            ->orderBy('event_date', 'asc')->orderBy('time_start', 'asc');
 
         $events = $query->get([
             'id', 'name', 'slug_name', 'location', 'description', 
-            'start_date', 'end_date', 'time_start', 'url_image', 
+            'publish_date', 'event_date', 'time_start', 'url_image', 
             'classification', 'org_id', 'created_by', 'created_at', 'updated_at'
         ]);
 
@@ -74,8 +74,8 @@ class ChurchEventController extends Controller
                 'slug_name' => $event->slug_name,
                 'location' => $event->location,
                 'description' => $event->description,
-                'start_date' => $event->start_date?->format('Y-m-d'),
-                'end_date' => $event->end_date?->format('Y-m-d'),
+                'publish_date' => $event->publish_date?->format('Y-m-d'),
+                'event_date' => $event->event_date?->format('Y-m-d'),
                 'time_start' => $event->time_start?->format('H:i'),
                 'org_id' => $event->org_id,
                 'created_by' => $event->created_by,
@@ -112,8 +112,8 @@ class ChurchEventController extends Controller
             'slug_name' => 'nullable|string|unique:church_events,slug_name|max:255',
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'publish_date' => 'required|date',
+            'event_date' => 'nullable|date|after_or_equal:publish_date',
             'time_start' => 'nullable|date_format:H:i',
             'url_image' => 'nullable|string',
             'classification' => 'nullable|string|in:jv3s,general,jv3s-teen,jv3s-legado',
@@ -152,8 +152,8 @@ class ChurchEventController extends Controller
             'slug_name' => 'nullable|string|unique:church_events,slug_name,' . $churchEvent->id . '|max:255',
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'start_date' => 'sometimes|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'publish_date' => 'sometimes|date',
+            'event_date' => 'nullable|date|after_or_equal:publish_date',
             'time_start' => 'nullable|date_format:H:i',
             'url_image' => 'nullable|string',
             'classification' => 'nullable|string|in:jv3s,general,jv3s-teen,jv3s-legado',

@@ -10,8 +10,8 @@ class ChurchEvent extends Model {
     'slug_name',
     'location',
     'description',
-    'start_date',
-    'end_date',
+    'publish_date',
+    'event_date',
     'time_start',
     'url_image',
     'classification',
@@ -22,8 +22,8 @@ class ChurchEvent extends Model {
   protected $hidden = ['url_image'];
 
   protected $casts = [
-    'start_date' => 'date:Y-m-d',
-    'end_date' => 'date:Y-m-d',
+    'publish_date' => 'date:Y-m-d',
+    'event_date' => 'date:Y-m-d',
     'time_start' => 'datetime:H:i',
   ];
 

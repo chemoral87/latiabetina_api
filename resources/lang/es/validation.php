@@ -147,8 +147,8 @@ return [
     */
 
     'attributes' => [
-        'end_date' => 'Fecha Fin',
-        'start_date' => 'Fecha Inicio',
+        'event_date' => 'Fecha Evento',
+        'publish_date' => 'Fecha Publicación',
     ],
 
 ];
