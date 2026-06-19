@@ -10,8 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Carbon;
 
-class ChurchEventController extends Controller 
+class ChurchEventController extends Controller      
 {
     use AppliesOrgPermissionScope;
 
@@ -53,10 +54,16 @@ class ChurchEventController extends Controller
             }
         }
 
+        $today = Carbon::now()->subHours(6);
+        $start_date = $request->get('start_date');
+        $end_date = $request->get('end_date');
+
         $query = queryServerSide($request, ChurchEvent::query())
             ->where('org_id', $decodedOrgId)
-            ->when($request->get('publish_date'), fn($q, $date) => $q->whereDate('publish_date', '>=', $date))
-           // ->when($request->get('event_date'), fn($q, $date) => $q->whereDate('publish_date', '<=', $date))
+            ->when($request->get('slug_name'), fn($q, $slug) => $q->where('slug_name', $slug))
+            ->whereDate('publish_date', '<=', $today)
+            ->when($start_date, fn($q) => $q->whereDate('event_date', '>=', $start_date))
+            ->when($end_date, fn($q) => $q->whereDate('event_date', '<=', $end_date))
             ->orderBy('event_date', 'asc')->orderBy('time_start', 'asc');
 
         $events = $query->get([
