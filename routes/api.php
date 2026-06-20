@@ -127,6 +127,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::get('/', 'index');
     Route::get('/{churchEvent}', 'show');
     Route::post('/', 'store');
+    Route::post('/{churchEvent}/copy', 'copy');
     Route::put('/{churchEvent}', 'update');
     Route::delete('/{churchEvent}', 'destroy');
   });

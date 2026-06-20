@@ -142,6 +142,30 @@ function deleteS3($path) {
   return $result;
 }
 
+function copyS3($path, string $newPath) {
+  if (empty($path)) {
+    return null;
+  }
+
+  try {
+    $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'webp';
+    $d = app()->environment();
+    $name = $d . "/" . $newPath . Carbon::now()->format("Ymd") . "/" . Str::uuid()->getHex()->toString() . '.' . $extension;
+
+    $copied = Storage::disk('s3')->copy($path, $name);
+
+    if (!$copied) {
+      \Illuminate\Support\Facades\Log::error("Failed to copy S3 image from {$path} to {$name}");
+      return null;
+    }
+
+    return $name;
+  } catch (\Throwable $e) {
+    \Illuminate\Support\Facades\Log::error("Error in copyS3: " . $e->getMessage());
+    return null;
+  }
+}
+
 function saveAmazonFile($file, $path, $old_file = null) {
   $d = app()->environment();
   $extension = $file->extension();

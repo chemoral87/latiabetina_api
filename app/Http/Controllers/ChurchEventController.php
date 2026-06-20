@@ -191,6 +191,39 @@ class ChurchEventController extends Controller
     }
 
     /**
+     * Copy the specified event into several new events, one per selected date.
+     */
+    public function copy(Request $request, ChurchEvent $churchEvent): JsonResponse
+    {
+        $data = $request->validate([
+            'dates' => 'required|array|min:1',
+            'dates.*' => 'date',
+        ]);
+
+        $createdEvents = [];
+
+        foreach (array_unique($data['dates']) as $eventDate) {
+            $attributes = $churchEvent->only([
+                'name', 'location', 'description', 'publish_date',
+                'time_start', 'url_image', 'classification', 'org_id', 'created_by',
+            ]);
+
+            if (!empty($attributes['url_image'])) {
+                $path = "ORG-{$attributes['org_id']}{$this->path}";
+                $attributes['url_image'] = copyS3($attributes['url_image'], $path) ?? $attributes['url_image'];
+            }
+
+            $attributes['event_date'] = $eventDate;
+            $attributes['slug_name'] = Str::slug($attributes['name']) . '-' . $attributes['org_id'] . '-' . Carbon::parse($eventDate)->format('ymd') . '-' . Str::random(4);
+
+            $newEvent = ChurchEvent::create($attributes);
+            $createdEvents[] = $newEvent->makeVisible('url_image')->append('url_image_s3');
+        }
+
+        return response()->json($createdEvents, 201);
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(ChurchEvent $churchEvent): JsonResponse
