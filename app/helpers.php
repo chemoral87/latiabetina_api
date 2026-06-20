@@ -79,12 +79,12 @@ function saveS3Blob($blob, string $path, ?string $file_to_delete = null): ?strin
     if ($file_to_delete) {
       try {
         Storage::disk('s3')->delete($file_to_delete);
-      } catch (\Exception $e) {
+      } catch (\Throwable $e) {
         \Illuminate\Support\Facades\Log::warning("Failed to delete old S3 image ({$file_to_delete}): " . $e->getMessage());
       }
     }
     return $name;
-  } catch (\Exception $e) {
+  } catch (\Throwable $e) {
     \Illuminate\Support\Facades\Log::error("Error in saveS3Blob: " . $e->getMessage());
     return null;
   }
