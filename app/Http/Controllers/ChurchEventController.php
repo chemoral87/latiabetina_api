@@ -129,7 +129,8 @@ class ChurchEventController extends Controller
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
             $path = "ORG-{$data['org_id']}{$this->path}";
-            $data['url_image'] = saveS3Blob($request->url_image, $path);
+            $treatedImage = treatImage($request->url_image, 80);
+            $data['url_image'] = saveS3Blob($treatedImage, $path);
         }
 
         if (empty($data['slug_name'])) {
@@ -171,7 +172,8 @@ class ChurchEventController extends Controller
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
             $orgId = $data['org_id'] ?? $churchEvent->org_id;
             $path = "ORG-{$orgId}{$this->path}";
-            $data['url_image'] = saveS3Blob($request->url_image, $path, $churchEvent->url_image);
+            $treatedImage = treatImage($request->url_image, 80);
+            $data['url_image'] = saveS3Blob($treatedImage, $path, $churchEvent->url_image);
         }
 
         if (isset($data['name']) && !isset($data['slug_name'])) {
@@ -230,7 +232,7 @@ class ChurchEventController extends Controller
     {
         if (!empty($churchEvent->url_image)) {
             try {
-                Storage::disk('s3')->delete($churchEvent->url_image);
+                deleteS3($churchEvent->url_image);
             } catch (\Exception $e) {
                 Log::warning("Failed to delete S3 image ({$churchEvent->url_image}): " . $e->getMessage());
             }

@@ -36,19 +36,13 @@ function decodeUUID($shortened) {
 function saveBlob($blob, $path, $file_to_delete = null) {
   $d = app()->environment();
   $folder = Carbon::now()->format("Ymd") . "/";
-  $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.jpg';
-  $manager = new ImageManager(new Driver());
-  $intervention = $manager->read($blob)->toWebp();
-  // storage in public storage
-  $result = Storage::disk('public')->put($name, $intervention);
-  // $result = Storage::disk('s3')->put($name, $intervention);
-  // https://www.positronx.io/laravel-image-resize-upload-with-intervention-image-package/
-  // https://laracasts.com/discuss/channels/laravel/resize-an-image-before-upload-to-s3
+  $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.webp';
+  
+  $result = Storage::disk('public')->put($name, $blob);
 
   if ($file_to_delete != null) {
     try {
-      // save in public storage
-
+      Storage::disk('public')->delete($file_to_delete);
     } catch (Exception $e) {
     }
   }
@@ -60,16 +54,9 @@ function saveS3Blob($blob, string $path, ?string $file_to_delete = null): ?strin
   $d = app()->environment();
   $folder = Carbon::now()->format("Ymd") . "/";
   $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.webp';
-  // \Illuminate\Support\Facades\Log::info("Generated S3 path: {$name}");
   
   try {
-    $manager = new ImageManager(new Driver());
-    $image = $manager->read($blob);
-    $intervention = $image->toWebp(80);
-    // \Illuminate\Support\Facades\Log::info("Image processed successfully");
-    
-    $isUploaded = Storage::disk('s3')->put($name, (string) $intervention);
-    // \Illuminate\Support\Facades\Log::info("S3 upload result: " . ($isUploaded ? "Success" : "Failure"));
+    $isUploaded = Storage::disk('s3')->put($name, $blob);
     
     if (!$isUploaded) {
       \Illuminate\Support\Facades\Log::error("Failed to upload image to S3: {$name}");
@@ -88,6 +75,10 @@ function saveS3Blob($blob, string $path, ?string $file_to_delete = null): ?strin
     \Illuminate\Support\Facades\Log::error("Error in saveS3Blob: " . $e->getMessage());
     return null;
   }
+}
+
+function treatImage($blob, int $quality = 80, ?int $maxWidth = 1200, ?int $maxHeight = 1200) {
+  return \App\Services\ImageTreatmentService::getInstance()->treat($blob, $quality, $maxWidth, $maxHeight);
 }
 
 function awsUrlS3($path, $random = true) {
