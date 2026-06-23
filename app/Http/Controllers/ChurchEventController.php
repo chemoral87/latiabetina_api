@@ -210,10 +210,11 @@ class ChurchEventController extends Controller
                 'time_start', 'url_image', 'classification', 'org_id', 'created_by',
             ]);
 
-            if (!empty($attributes['url_image'])) {
+           /* if (!empty($attributes['url_image'])) {
                 $path = "ORG-{$attributes['org_id']}{$this->path}";
-                $attributes['url_image'] = copyS3($attributes['url_image'], $path) ?? $attributes['url_image'];
-            }
+                $attributes['url_image'] = $attributes['url_image'];
+               // $attributes['url_image'] = copyS3($attributes['url_image'], $path) ?? $attributes['url_image'];
+            } */
 
             $attributes['event_date'] = $eventDate;
             $attributes['slug_name'] = Str::slug($attributes['name']) . '-' . $attributes['org_id'] . '-' . Carbon::parse($eventDate)->format('ymd') . '-' . Str::random(4);
@@ -232,7 +233,7 @@ class ChurchEventController extends Controller
     {
         if (!empty($churchEvent->url_image)) {
             try {
-                deleteS3($churchEvent->url_image);
+              //  deleteS3($churchEvent->url_image);
             } catch (\Exception $e) {
                 Log::warning("Failed to delete S3 image ({$churchEvent->url_image}): " . $e->getMessage());
             }
