@@ -164,7 +164,7 @@ class ChurchEventController extends Controller
             'event_date' => 'nullable|date|after_or_equal:publish_date',
             'time_start' => 'nullable|date_format:H:i',
             'url_image' => 'nullable|string',
-            'classification' => 'nullable|string|in:jv3s,general,jv3s-teen,jv3s-legado',
+           // 'classification' => 'nullable|string|in:jv3s,general,jv3s-teen,jv3s-legado',
             'org_id' => 'sometimes|exists:organizations,id',
             'created_by' => 'sometimes|exists:users,id',
         ]);
