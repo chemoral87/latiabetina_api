@@ -58,19 +58,31 @@ class ChurchEventController extends Controller
         $start_date = $request->get('start_date');
         $end_date = $request->get('end_date');
 
-        $query = queryServerSide($request, ChurchEvent::query())
-            ->where('org_id', $decodedOrgId)
-            ->when($request->get('slug_name'), fn($q, $slug) => $q->where('slug_name', $slug))
-            ->whereDate('publish_date', '<=', $today)
-            ->when($start_date, fn($q) => $q->whereDate('event_date', '>=', $start_date))
-            ->when($end_date, fn($q) => $q->whereDate('event_date', '<=', $end_date))
-            ->orderBy('event_date', 'asc')->orderBy('time_start', 'asc');
-
-        $events = $query->get([
-            'id', 'name', 'slug_name', 'location', 'description', 
-            'publish_date', 'event_date', 'time_start', 'url_image', 
+        $columns = [
+            'id', 'name', 'slug_name', 'location', 'description',
+            'publish_date', 'event_date', 'time_start', 'url_image',
             'classification', 'org_id', 'created_by', 'created_at', 'updated_at'
-        ]);
+        ];
+
+        if ($request->has('search')) {
+            $events = ChurchEvent::query()
+                ->where('org_id', $decodedOrgId)
+                ->where('name', 'like', "%{$request->get('search')}%")
+                ->whereDate('publish_date', '<=', $today)
+                ->whereDate('event_date', '>=', $today)
+                ->orderBy('event_date', 'asc')->orderBy('time_start', 'asc')
+                ->limit(15)
+                ->get($columns);
+        } else {
+            $events =  ChurchEvent::query()
+                ->where('org_id', $decodedOrgId)
+                ->when($request->get('slug_name'), fn($q, $slug) => $q->where('slug_name', $slug))
+                ->whereDate('publish_date', '<=', $today)
+                ->when($start_date, fn($q) => $q->whereDate('event_date', '>=', $start_date))
+                ->when($end_date, fn($q) => $q->whereDate('event_date', '<=', $end_date))
+                ->orderBy('event_date', 'asc')->orderBy('time_start', 'asc')
+                ->get($columns);
+        }
 
         // Transform collection efficiently while ensuring custom attributes are appended
         $transformedEvents = $events->map(function ($event) {
@@ -135,7 +147,8 @@ class ChurchEventController extends Controller
         }
 
         if (empty($data['slug_name'])) {
-            $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . date('ymd');
+            $data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . Str::uuid();
+            //$data['slug_name'] = Str::slug($data['name']) . '-' . $data['org_id'] . '-' . date('ymd');
 
             if (ChurchEvent::where('slug_name', $data['slug_name'])->exists()) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
@@ -180,7 +193,7 @@ class ChurchEventController extends Controller
 
         if (isset($data['name']) && !isset($data['slug_name'])) {
             $orgId = $data['org_id'] ?? $churchEvent->org_id;
-            $data['slug_name'] = Str::slug($data['name']) . '-' . $orgId . '-' . date('ym');
+            $data['slug_name'] = Str::slug($data['name']) . '-' . $orgId . '-' . Str::uuid();
 
             if (ChurchEvent::where('slug_name', $data['slug_name'])->where('id', '!=', $churchEvent->id)->exists()) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
