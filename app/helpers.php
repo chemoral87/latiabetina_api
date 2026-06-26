@@ -110,18 +110,25 @@ function temporaryUrlS3($path) {
   if ($path) {
 
     $cacheKey = 'temp-url-' . $path;
-    $cacheTtl = 5; // in minutes
+    $cacheTtl = 60 * 24 * 7; // 7 days in minutes
     // Check if the temporary URL is already cached
     if (Cache::has($cacheKey)) {
       return Cache::get($cacheKey);
     }
-    //   return Storage::disk('s3')->temporaryUrl($path, Carbon::now()->addMinutes(cacheTtl));
-    $temporaryUrl = Storage::disk('s3')->temporaryUrl($path, now()->addMinutes(5));
+    $temporaryUrl = Storage::disk('s3')->temporaryUrl($path, now()->addDays(7));
     Cache::put($cacheKey, $temporaryUrl, $cacheTtl);
     return $temporaryUrl;
   }
   return "https://source.unsplash.com/96x96/daily";
 
+}
+
+function permanentUrlS3(?string $path): string {
+    if (!empty($path)) {
+        return Storage::disk('s3')->url($path);
+    }
+
+    return "";
 }
 
 function deleteS3($path) {
