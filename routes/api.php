@@ -1,6 +1,5 @@
 
 
-
 <?php
 
 use App\Http\Controllers\AuditoriumController;
@@ -125,6 +124,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
     Route::get('/', 'index');
+    Route::get('/calendar', 'calendar');
     Route::get('/{churchEvent}', 'show');
     Route::post('/', 'store');
     Route::post('/{churchEvent}/copy', 'copy');

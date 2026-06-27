@@ -40,6 +40,39 @@ class ChurchEventController extends Controller
     }
 
     /**
+     * Display a calendar listing filtered by date range.
+     */
+    public function calendar(Request $request): JsonResponse
+    {
+        $query = ChurchEvent::query();
+
+        if ($filter = $request->get('filter')) {
+            $query->where('name', 'like', "%{$filter}%");
+        }
+
+        if ($orgId = $request->get('org_id')) {
+            $query->where('org_id', $orgId);
+        }
+
+        if ($startDate = $request->get('start_date')) {
+            $query->whereDate('event_date', '>=', $startDate);
+        }
+
+        if ($endDate = $request->get('end_date')) {
+            $query->whereDate('event_date', '<=', $endDate);
+        }
+
+        $query = $this->applyOrgPermissionScope($query, $request->user(), 'church-event-index');
+
+        $events = $query->orderBy('event_date', 'asc')->orderBy('time_start', 'asc')->get();
+
+        return response()->json([
+            'data' => $events,
+            'total' => $events->count(),
+        ]);
+    }
+
+    /**
      * Display a public listing of the resource filtered by organization.
      */
     public function publicIndex(Request $request): JsonResponse
