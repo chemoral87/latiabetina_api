@@ -34,9 +34,9 @@ class ChurchEventController extends Controller
         }
 
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'church-event-index');
-        $testimonies = $query->paginate($request->get('itemsPerPage'));
+        $churchEvents = $query->paginate($request->get('itemsPerPage'));
 
-        return new DataSetResource($testimonies);
+        return new DataSetResource($churchEvents);
     }
 
     /**
@@ -65,6 +65,10 @@ class ChurchEventController extends Controller
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'church-event-index');
 
         $events = $query->orderBy('event_date', 'asc')->orderBy('time_start', 'asc')->get();
+
+        $events->each(function ($event) {
+            $event->makeVisible('url_image')->append('url_image_s3');
+        });
 
         return response()->json([
             'data' => $events,
