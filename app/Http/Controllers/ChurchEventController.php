@@ -198,7 +198,10 @@ class ChurchEventController extends Controller
 
         $event = ChurchEvent::create($data);
 
-        return response()->json($event->makeVisible('url_image')->append('url_image_s3'), 201);
+        return response()->json([
+            'success' => __('messa.church_event_create', ['name' => $event->name]),
+            'data' => $event->makeVisible('url_image')->append('url_image_s3'),
+        ], 201);
     }
 
     /**
@@ -241,7 +244,10 @@ class ChurchEventController extends Controller
 
         $churchEvent->update($data);
 
-        return response()->json($churchEvent->makeVisible('url_image')->append('url_image_s3'));
+        return response()->json([
+            'success' => __('messa.church_event_update', ['name' => $churchEvent->name]),
+            'data' => $churchEvent->makeVisible('url_image')->append('url_image_s3'),
+        ]);
     }
 
     /**
@@ -255,6 +261,7 @@ class ChurchEventController extends Controller
         ]);
 
         $createdEvents = [];
+        $skippedDates = [];
 
         foreach (array_unique($data['dates']) as $eventDate) {
             $attributes = $churchEvent->only([
@@ -269,13 +276,27 @@ class ChurchEventController extends Controller
             } */
 
             $attributes['event_date'] = $eventDate;
+
+            $duplicate = ChurchEvent::where('org_id', $attributes['org_id'])
+                ->where('name', $attributes['name'])
+                ->whereDate('event_date', $eventDate)
+                ->exists();
+
+            if ($duplicate) {
+                $skippedDates[] = $eventDate;
+                continue;
+            }
+
             $attributes['slug_name'] = Str::slug($attributes['name']) . '-' . $attributes['org_id'] . '-' . Carbon::parse($eventDate)->format('ymd') . '-' . Str::random(4);
 
             $newEvent = ChurchEvent::create($attributes);
             $createdEvents[] = $newEvent->makeVisible('url_image')->append('url_image_s3');
         }
 
-        return response()->json($createdEvents, 201);
+        return response()->json([
+            'created' => $createdEvents,
+            'skipped' => $skippedDates,
+        ], 201);
     }
 
     /**
@@ -293,6 +314,6 @@ class ChurchEventController extends Controller
 
         $churchEvent->delete();
 
-        return response()->json(['message' => 'Church event deleted']);
+        return response()->json(['success' => __('messa.church_event_delete')]);
     }
 }
