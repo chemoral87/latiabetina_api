@@ -94,4 +94,12 @@ return [
   'testimony_approved' => 'Testimonio aprobado',
   'testimony_rejected' => 'Testimonio rechazado',
 
+  'product_create' => 'Producto :name creado',
+  'product_update' => 'Producto :name guardado',
+  'product_delete' => 'Producto eliminado',
+
+  'sale_create' => 'Venta :number registrada',
+  'sale_item_invalid_org' => 'Uno de los artículos no pertenece a la organización seleccionada.',
+  'sale_item_insufficient_stock' => 'No hay stock suficiente para :name.',
+
 ];

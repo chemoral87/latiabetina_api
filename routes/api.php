@@ -12,7 +12,9 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TestimonyController;
 use App\Http\Controllers\UserController;
@@ -138,6 +140,20 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::post('/', 'create');
     Route::put('/{id}', 'update');
     Route::delete('/{id}', 'delete');
+  });
+
+  Route::prefix('product')->controller(ProductController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{product}', 'show');
+    Route::post('/', 'store');
+    Route::put('/{product}', 'update');
+    Route::delete('/{product}', 'destroy');
+  });
+
+  Route::prefix('sale')->controller(SaleController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{sale}', 'show');
+    Route::post('/', 'store');
   });
 
   Route::prefix('organization')->controller(OrganizationController::class)->group(function () {
