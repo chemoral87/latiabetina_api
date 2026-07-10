@@ -18,6 +18,7 @@ class Product extends Model
         'requires_preparation',
         'price',
         'stock',
+        'order',
         'created_by',
         'updated_by',
     ];
@@ -27,6 +28,7 @@ class Product extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'stock' => 'integer',
+        'order' => 'integer',
         'hidden' => 'boolean',
         'requires_preparation' => 'boolean',
     ];

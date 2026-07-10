@@ -31,7 +31,9 @@ class ProductController extends Controller
         }
 
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'product-index');
-        $query->orderBy('name', 'asc');
+        if (!$request->has('sortBy')) {
+            $query->orderBy('name', 'asc');
+        }
 
         $products = $query->paginate($request->get('itemsPerPage'));
 
@@ -55,6 +57,7 @@ class ProductController extends Controller
             'requires_preparation' => 'boolean',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'order' => 'nullable|integer',
         ]);
 
         if ($request->filled('image') && str_starts_with($request->image, 'data:')) {
@@ -90,6 +93,7 @@ class ProductController extends Controller
             'requires_preparation' => 'boolean',
             'price' => 'sometimes|numeric|min:0',
             'stock' => 'sometimes|integer|min:0',
+            'order' => 'nullable|integer',
         ]);
 
         if ($request->filled('image') && str_starts_with($request->image, 'data:')) {

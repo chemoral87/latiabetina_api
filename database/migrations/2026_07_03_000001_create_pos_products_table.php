@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('requires_preparation')->default(false);
             $table->decimal('price', 12, 2)->default(0);
             $table->integer('stock')->default(0);
+            $table->integer('order')->default(0);
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
