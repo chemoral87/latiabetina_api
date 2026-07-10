@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\ChurchEvent;
+use App\Services\ChurchEventCopyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -256,24 +257,33 @@ class ChurchEventController extends Controller
     public function copy(Request $request, ChurchEvent $churchEvent): JsonResponse
     {
         $data = $request->validate([
-            'dates' => 'required|array|min:1',
+            'dates' => 'nullable|array|min:1',
             'dates.*' => 'date',
+            'recurrence' => 'nullable|array',
+            'recurrence.start_date' => 'nullable|required_with:recurrence|date',
+            'recurrence.end_date' => 'nullable|required_with:recurrence|date',
+            'recurrence.days_of_week' => 'nullable|required_with:recurrence|array',
+            'recurrence.days_of_week.*' => 'integer|min:0|max:6',
         ]);
+
+        $copyService = app(ChurchEventCopyService::class);
+        $eventDates = $copyService->resolveDates($data, $churchEvent->event_date?->format('Y-m-d'));
+
+        if (empty($eventDates)) {
+            return response()->json([
+                'created' => [],
+                'skipped' => [],
+            ], 201);
+        }
 
         $createdEvents = [];
         $skippedDates = [];
 
-        foreach (array_unique($data['dates']) as $eventDate) {
+        foreach (array_unique($eventDates) as $eventDate) {
             $attributes = $churchEvent->only([
                 'name', 'location', 'description', 'publish_date',
                 'time_start', 'url_image', 'classification', 'org_id', 'created_by',
             ]);
-
-           /* if (!empty($attributes['url_image'])) {
-                $path = "ORG-{$attributes['org_id']}{$this->path}";
-                $attributes['url_image'] = $attributes['url_image'];
-               // $attributes['url_image'] = copyS3($attributes['url_image'], $path) ?? $attributes['url_image'];
-            } */
 
             $attributes['event_date'] = $eventDate;
 
