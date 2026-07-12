@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\DataSetResource;
 use App\Http\Resources\RoleShowResource;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller {
@@ -71,6 +72,21 @@ class RoleController extends Controller {
       $role->permissions()->sync($permissions_ids);
     }
     return ['success' => __('messa.role_permission_update')];
+  }
+
+  public function addPermission(Request $request, $id) {
+    $this->validate($request, [
+      'name' => 'required|string|max:255',
+    ]);
+
+    $role = Role::findOrFail($id);
+    $permission = Permission::firstOrCreate(['name' => trim($request->input('name')), 'guard_name' => 'api']);
+    $role->givePermissionTo($permission);
+
+    return response()->json([
+      'success' => __('messa.role_permission_update'),
+      'permission' => ['id' => $permission->id, 'name' => $permission->name],
+    ]);
   }
 
   public function delete($id) {

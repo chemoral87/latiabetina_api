@@ -91,6 +91,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::put('/{id}', 'update');
     Route::delete('/{id}', 'delete');
     Route::put('/{id}/children', 'children');
+    Route::post('/{id}/permission', 'addPermission');
   });
 
   Route::prefix('auditorium')->controller(AuditoriumController::class)->group(function () {
