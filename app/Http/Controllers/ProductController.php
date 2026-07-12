@@ -66,9 +66,9 @@ class ProductController extends Controller
             $data['image'] = saveS3Blob($treatedImage, $path);
         }
 
-        if (empty($data['sku'])) {
+      /*  if (empty($data['sku'])) {
             $data['sku'] = Str::upper(Str::slug($data['name'])) . '-' . Str::random(4);
-        }
+        } */
 
         $data['created_by'] = $request->user()->id;
         $data['updated_by'] = $request->user()->id;
@@ -103,9 +103,9 @@ class ProductController extends Controller
             $data['image'] = saveS3Blob($treatedImage, $path, $product->image);
         }
 
-        if (empty($data['sku']) && $request->has('name')) {
+      /*  if (empty($data['sku']) && $request->has('name')) {
             $data['sku'] = Str::upper(Str::slug($data['name'])) . '-' . Str::random(4);
-        }
+        }*/
 
         $data['updated_by'] = $request->user()->id;
         $product->update($data);
@@ -121,5 +121,41 @@ class ProductController extends Controller
         $product->delete();
 
         return response()->json(['success' => 'Producto eliminado']);
+    }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:pos_products,id',
+        ]);
+
+        foreach ($data['ids'] as $order => $id) {
+            Product::where('id', $id)->update(['order' => $order]);
+        }
+
+        return response()->json(['success' => 'Orden actualizado']);
+    }
+
+    /**
+     * Returns all visible products for a given org, ordered for POS display.
+     * GET /product/pos?org_id=1   (org_id optional — omit to load all permitted orgs)
+     */
+    public function pos(Request $request): JsonResponse
+    {
+        $query = Product::query()
+            ->where('hidden', false)
+            ->orderBy('order', 'asc')
+            ->orderBy('name', 'asc');
+
+        if ($orgId = $request->get('org_id')) {
+            $query->where('org_id', $orgId);
+        }
+
+        $query = $this->applyOrgPermissionScope($query, $request->user(), 'product-index');
+
+        $products = $query->get();
+
+        return response()->json(['data' => $products]);
     }
 }

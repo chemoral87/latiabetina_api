@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('org_id');
             $table->string('name');
-            $table->string('sku')->unique();
+            $table->string('sku')->nullable();
             $table->text('description')->nullable();
             $table->string('image')->nullable();
             $table->boolean('hidden')->default(false);

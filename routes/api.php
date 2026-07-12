@@ -144,6 +144,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('product')->controller(ProductController::class)->group(function () {
     Route::get('/', 'index');
+    Route::get('/pos', 'pos');
+    Route::post('/reorder', 'reorder');
     Route::get('/{product}', 'show');
     Route::post('/', 'store');
     Route::put('/{product}', 'update');
