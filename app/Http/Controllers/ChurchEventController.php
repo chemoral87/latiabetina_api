@@ -242,7 +242,7 @@ class ChurchEventController extends Controller
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
             $path = "ORG-{$data['org_id']}{$this->path}";
-            $treatedImage = treatImage($request->url_image, 80);
+            $treatedImage = treatImage($request->url_image, 95);
             $data['url_image'] = saveS3Blob($treatedImage, $path);
         }
 
@@ -290,7 +290,7 @@ class ChurchEventController extends Controller
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
             $orgId = $data['org_id'] ?? $churchEvent->org_id;
             $path = "ORG-{$orgId}{$this->path}";
-            $treatedImage = treatImage($request->url_image, 80);
+            $treatedImage = treatImage($request->url_image, 95);
             $data['url_image'] = saveS3Blob($treatedImage, $path, $churchEvent->url_image);
         }
 
