@@ -52,6 +52,7 @@ Route::group(['middleware' => ['api']], function () {
 
   Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
     Route::get('/public', 'publicIndex');
+    Route::get('/public/carousel', 'publicCarousel');
   });
 
   Route::prefix('user')->controller(UserController::class)->group(function () {

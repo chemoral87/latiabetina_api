@@ -147,6 +147,68 @@ class ChurchEventController extends Controller
     }
 
     /**
+     * Display a public listing of events for the next N days.
+     */
+    public function publicCarousel(Request $request): JsonResponse
+    {
+        $orgId = $request->get('org_id');
+        $decodedOrgId = null;
+
+        if ($orgId) {
+            $decoded = base64_decode($orgId, true);
+            if ($decoded !== false && is_numeric($decoded)) {
+                $decodedOrgId = (int) $decoded;
+            }
+        }
+
+        $today = Carbon::now()->subHours(6);
+        $nextDays = $request->get('nextDays', 15);
+        if (!is_numeric($nextDays) || $nextDays < 0) {
+            $nextDays = 15;
+        } else {
+            $nextDays = (int) $nextDays;
+        }
+        $endDate = $today->copy()->addDays($nextDays);
+
+        $columns = [
+            'id', 'name', 'slug_name', 'location', 'description',
+            'publish_date', 'event_date', 'time_start', 'url_image',
+            'classification', 'org_id', 'created_by', 'created_at', 'updated_at'
+        ];
+
+        $events = ChurchEvent::query()
+            ->where('org_id', $decodedOrgId)
+            ->whereDate('publish_date', '<=', $today)
+            ->whereDate('event_date', '>=', $today)
+            ->whereDate('event_date', '<=', $endDate)
+            ->orderBy('event_date', 'asc')->orderBy('time_start', 'asc')
+            ->get($columns);
+
+        $transformedEvents = $events->map(function ($event) {
+            $event->makeVisible('url_image')->append('url_image_s3');
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'slug_name' => $event->slug_name,
+                'location' => $event->location,
+                'description' => $event->description,
+                'publish_date' => $event->publish_date?->format('Y-m-d'),
+                'event_date' => $event->event_date?->format('Y-m-d'),
+                'time_start' => $event->time_start?->format('H:i'),
+                'org_id' => $event->org_id,
+                'created_by' => $event->created_by,
+                'url_image_s3' => $event->url_image_s3,
+                'classification' => $event->classification,
+                'created_at' => $event->created_at,
+                'updated_at' => $event->updated_at,
+            ];
+        });
+
+        return response()->json($transformedEvents);
+    }
+
+
+    /**
      * Display the specified resource.
      */
     public function show(ChurchEvent $churchEvent): ChurchEvent
