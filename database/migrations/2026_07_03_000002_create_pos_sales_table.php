@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('pos_sales', function (Blueprint $table) {
             $table->id();
-            $table->string('number')->unique();
+            $table->string('number');
             $table->unsignedBigInteger('org_id');
             $table->string('customer_name')->nullable();
             $table->string('customer_phone')->nullable();

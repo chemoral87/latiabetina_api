@@ -158,6 +158,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::get('/', 'index');
     Route::get('/{sale}', 'show');
     Route::post('/', 'store');
+    Route::put('/{sale}', 'update');
     Route::delete('/{sale}', 'destroy');
   });
 

@@ -99,6 +99,7 @@ return [
   'product_delete' => 'Producto eliminado',
 
   'sale_create' => 'Venta :number registrada',
+  'sale_update' => 'Venta :number actualizada',
   'sale_deleted' => 'Venta :number eliminada',
   'sale_item_invalid_org' => 'Uno de los artículos no pertenece a la organización seleccionada.',
   'sale_item_insufficient_stock' => 'No hay stock suficiente para :name.',

@@ -6,9 +6,10 @@ use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\Product;
 use App\Models\Sale;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SaleController extends Controller
@@ -40,6 +41,105 @@ class SaleController extends Controller
     public function show(Sale $sale): Sale
     {
         return $sale->load('items.product');
+    }
+
+    public function update(Request $request, Sale $sale): JsonResponse
+    {
+        $data = $request->validate([
+            'customer_name' => 'nullable|string|max:255',
+            'customer_phone' => 'nullable|string|max:50',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'nullable|integer|exists:pos_sale_items,id',
+            'items.*.product_id' => 'required|exists:pos_products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        // Update customer info
+        $sale->customer_name = $data['customer_name'] ?? $sale->customer_name;
+        $sale->customer_phone = $data['customer_phone'] ?? $sale->customer_phone;
+
+        $subtotal = 0;
+        $updatedItemIds = [];
+
+        foreach ($data['items'] as $itemData) {
+            $existingItem = $sale->items()->where('product_id', $itemData['product_id'])->first();
+
+            if ($existingItem) {
+                $oldQuantity = $existingItem->quantity;
+                $newQuantity = (int) $itemData['quantity'];
+                $quantityDiff = $newQuantity - $oldQuantity;
+
+                if ($quantityDiff !== 0) {
+                    $product = Product::findOrFail($itemData['product_id']);
+
+                    if ($quantityDiff > 0) {
+                        // Taking more from stock
+                        if ($product->stock < $quantityDiff) {
+                            throw ValidationException::withMessages([
+                                'items' => [__('messa.sale_item_insufficient_stock', ['name' => $product->name])],
+                            ]);
+                        }
+                        $product->decrement('stock', $quantityDiff);
+                    } else {
+                        // Returning items to stock
+                        $product->increment('stock', abs($quantityDiff));
+                    }
+                }
+
+                $lineTotal = round($existingItem->unit_price * $newQuantity, 2);
+                $existingItem->update([
+                    'quantity' => $newQuantity,
+                    'total_price' => $lineTotal,
+                ]);
+
+                $updatedItemIds[] = $existingItem->id;
+                $subtotal += $lineTotal;
+            } else {
+                // New item added to the sale
+                $product = Product::where('id', $itemData['product_id'])
+                    ->where('org_id', $sale->org_id)
+                    ->firstOrFail();
+
+                if ($product->stock < $itemData['quantity']) {
+                    throw ValidationException::withMessages([
+                        'items' => [__('messa.sale_item_insufficient_stock', ['name' => $product->name])],
+                    ]);
+                }
+
+                $lineTotal = round($product->price * $itemData['quantity'], 2);
+                $newItem = $sale->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => $itemData['quantity'],
+                    'unit_price' => $product->price,
+                    'total_price' => $lineTotal,
+                ]);
+
+                $updatedItemIds[] = $newItem->id;
+                $product->decrement('stock', $itemData['quantity']);
+                $subtotal += $lineTotal;
+            }
+        }
+
+        $updatedItemIds = array_filter($updatedItemIds);
+
+        // Remove items that are no longer in the sale
+        $sale->items()->whereNotIn('id', $updatedItemIds)->each(function ($removedItem) {
+            // Restore stock for removed items
+            Product::where('id', $removedItem->product_id)->increment('stock', $removedItem->quantity);
+            $removedItem->delete();
+        });
+
+        $discount = round((float) ($sale->discount ?? 0), 2);
+        $total = round($subtotal - $discount, 2);
+
+        $sale->subtotal = $subtotal;
+        $sale->total = $total;
+        $sale->save();
+
+        return response()->json([
+            'success' => __('messa.sale_update', ['number' => $sale->number]),
+            'data' => $sale->fresh()->load('items.product'),
+        ]);
     }
 
     public function destroy(Sale $sale): JsonResponse
@@ -101,21 +201,39 @@ class SaleController extends Controller
 
         $discount = round((float) ($data['discount'] ?? 0), 2);
         $total = round($subtotal - $discount, 2);
-        $number = 'POS-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4));
 
-        $sale = Sale::create([
-            'number' => $number,
-            'org_id' => $data['org_id'],
-            'customer_name' => $data['customer_name'] ?? null,
-            'customer_phone' => $data['customer_phone'] ?? null,
-            'payment_method' => $data['payment_method'] ?? 'cash',
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'total' => $total,
-            'status' => 'completed',
-            'created_by' => $request->user()->id,
-            'sold_at' => now(),
-        ]);
+        // Generate number per org: RAND4-XX (01-99), rotating to a new random
+        // 4-character code once a prefix's sequence reaches 99.
+        $sale = null;
+        $attempts = 0;
+
+        while (! $sale) {
+            $number = $this->generateSaleNumber($data['org_id']);
+
+            try {
+                $sale = Sale::create([
+                    'number' => $number,
+                    'org_id' => $data['org_id'],
+                    'customer_name' => $data['customer_name'] ?? null,
+                    'customer_phone' => $data['customer_phone'] ?? null,
+                    'payment_method' => $data['payment_method'] ?? 'cash',
+                    'subtotal' => $subtotal,
+                    'discount' => $discount,
+                    'total' => $total,
+                    'status' => 'completed',
+                    'created_by' => $request->user()->id,
+                    'sold_at' => now(),
+                ]);
+            } catch (QueryException $e) {
+                $isDuplicate = (int) ($e->errorInfo[1] ?? 0) === 1062;
+
+                if (! $isDuplicate || ++$attempts >= 5) {
+                    throw $e;
+                }
+                // Duplicate number (rare race condition): loop and try again
+                // with a freshly generated number.
+            }
+        }
 
         foreach ($saleItems as $item) {
             $sale->items()->create($item);
@@ -130,5 +248,69 @@ class SaleController extends Controller
             'success' => __('messa.sale_create', ['number' => $sale->number]),
             'data' => $sale->load('items.product'),
         ], 201);
+    }
+
+    /**
+     * Generate the next sale number for an organization: PREFIX-XX.
+     * PREFIX is a random 4-character uppercase alphanumeric code that stays
+     * fixed while the sequence (01-99) climbs. Once the sequence for the
+     * current prefix reaches 99, a new random prefix is generated and the
+     * sequence resets to 01. Locks the org's last sale row so concurrent
+     * requests for the same org can't compute the same number.
+     */
+    private function generateSaleNumber(int $orgId): string
+    {
+        return DB::transaction(function () use ($orgId) {
+            $lastSale = Sale::where('org_id', $orgId)
+                ->orderBy('id', 'desc')
+                ->lockForUpdate()
+                ->first();
+
+            if ($lastSale && preg_match('/^([A-Z0-9]{4})-(\d{2})$/', $lastSale->number, $matches)) {
+                $prefix = $matches[1];
+                $lastSeq = (int) $matches[2];
+
+                if ($lastSeq < 99) {
+                    $nextSeq = $lastSeq + 1;
+                } else {
+                    $prefix = $this->generateUniquePrefix($orgId);
+                    $nextSeq = 1;
+                }
+            } else {
+                $prefix = $this->generateUniquePrefix($orgId);
+                $nextSeq = 1;
+            }
+
+            return $prefix . '-' . str_pad($nextSeq, 2, '0', STR_PAD_LEFT);
+        });
+    }
+
+    /**
+     * Generate a random 4-character uppercase alphanumeric code that is not
+     * already in use as a prefix for this organization's sales.
+     */
+    private function generateUniquePrefix(int $orgId): string
+    {
+        do {
+            $prefix = $this->generateRandomCode(4);
+
+            $exists = Sale::where('org_id', $orgId)
+                ->where('number', 'like', $prefix . '-%')
+                ->exists();
+        } while ($exists);
+
+        return $prefix;
+    }
+
+    private function generateRandomCode(int $length = 4): string
+    {
+        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $code = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+
+        return $code;
     }
 }
