@@ -158,6 +158,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::get('/', 'index');
     Route::get('/{sale}', 'show');
     Route::post('/', 'store');
+    Route::delete('/{sale}', 'destroy');
   });
 
   Route::prefix('organization')->controller(OrganizationController::class)->group(function () {

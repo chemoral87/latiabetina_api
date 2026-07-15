@@ -42,6 +42,21 @@ class SaleController extends Controller
         return $sale->load('items.product');
     }
 
+    public function destroy(Sale $sale): JsonResponse
+    {
+        // Restore product stock before deleting items
+        foreach ($sale->items as $item) {
+            Product::where('id', $item->product_id)->increment('stock', $item->quantity);
+        }
+
+        $sale->items()->delete();
+        $sale->delete();
+
+        return response()->json([
+            'success' => __('messa.sale_deleted', ['number' => $sale->number]),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
