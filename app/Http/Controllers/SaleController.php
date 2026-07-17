@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SaleCreated;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\Product;
@@ -28,6 +29,14 @@ class SaleController extends Controller
 
         if ($orgId = $request->get('org_id')) {
             $query->where('org_id', $orgId);
+        }
+
+        if ($date = $request->get('date')) {
+            $query->whereDate('sold_at', $date);
+        }
+
+        if ($request->boolean('with_items')) {
+            $query->with('items.product');
         }
 
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'sale-index');
@@ -73,13 +82,11 @@ class SaleController extends Controller
                     $product = Product::findOrFail($itemData['product_id']);
 
                     if ($quantityDiff > 0) {
-                        // Taking more from stock
-                        if ($product->stock < $quantityDiff) {
-                            throw ValidationException::withMessages([
-                                'items' => [__('messa.sale_item_insufficient_stock', ['name' => $product->name])],
-                            ]);
+                        // Taking more from stock — deduct only what's available, floor at 0
+                        $deduct = min($quantityDiff, $product->stock);
+                        if ($deduct > 0) {
+                            $product->decrement('stock', $deduct);
                         }
-                        $product->decrement('stock', $quantityDiff);
                     } else {
                         // Returning items to stock
                         $product->increment('stock', abs($quantityDiff));
@@ -100,12 +107,6 @@ class SaleController extends Controller
                     ->where('org_id', $sale->org_id)
                     ->firstOrFail();
 
-                if ($product->stock < $itemData['quantity']) {
-                    throw ValidationException::withMessages([
-                        'items' => [__('messa.sale_item_insufficient_stock', ['name' => $product->name])],
-                    ]);
-                }
-
                 $lineTotal = round($product->price * $itemData['quantity'], 2);
                 $newItem = $sale->items()->create([
                     'product_id' => $product->id,
@@ -115,7 +116,10 @@ class SaleController extends Controller
                 ]);
 
                 $updatedItemIds[] = $newItem->id;
-                $product->decrement('stock', $itemData['quantity']);
+                $deduct = min($itemData['quantity'], $product->stock);
+                if ($deduct > 0) {
+                    $product->decrement('stock', $deduct);
+                }
                 $subtotal += $lineTotal;
             }
         }
@@ -182,12 +186,6 @@ class SaleController extends Controller
                 ]);
             }
 
-            if ($product->stock < $item['quantity']) {
-                throw ValidationException::withMessages([
-                    'items' => [__('messa.sale_item_insufficient_stock', ['name' => $product->name])],
-                ]);
-            }
-
             $lineTotal = round($product->price * $item['quantity'], 2);
             $subtotal += $lineTotal;
 
@@ -240,9 +238,15 @@ class SaleController extends Controller
 
             $product = Product::find($item['product_id']);
             if ($product) {
-                $product->decrement('stock', $item['quantity']);
+                $deduct = min($item['quantity'], $product->stock);
+                if ($deduct > 0) {
+                    $product->decrement('stock', $deduct);
+                }
             }
         }
+
+        // Broadcast to KDS listeners (only fires if any item requires_preparation)
+        event(new SaleCreated($sale));
 
         return response()->json([
             'success' => __('messa.sale_create', ['number' => $sale->number]),
