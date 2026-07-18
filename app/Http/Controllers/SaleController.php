@@ -31,20 +31,38 @@ class SaleController extends Controller
             $query->where('org_id', $orgId);
         }
 
-        if ($date = $request->get('date')) {
-            $query->whereDate('sold_at', $date);
-        }
-
-        if ($request->boolean('with_items')) {
-            $query->with('items.product');
-        }
-
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'sale-index');
         $query->orderBy('created_at', 'desc');
 
         $sales = $query->paginate($request->get('itemsPerPage'));
 
         return new DataSetResource($sales);
+    }
+
+    /**
+     * Returns all sales for a given date (defaults to today) with items and
+     * products eagerly loaded — intended for the cash-close / daily report / KDS view.
+     *
+     * GET /sale/daily?date=2026-07-17&org_id=1
+     * When no org_id is provided, returns sales for all orgs the user has access to.
+     */
+    public function daily(Request $request): JsonResponse
+    {
+        $date = $request->get('date', now()->toDateString());
+
+        $query = Sale::with('items.product', 'organization')
+            ->whereDate('sold_at', $date);
+
+        if ($orgId = $request->get('org_id')) {
+            $query->where('org_id', $orgId);
+        }
+
+        $query = $this->applyOrgPermissionScope($query, $request->user(), 'sale-index');
+        $query->orderBy('sold_at', 'asc');
+
+        $sales = $query->get();
+
+        return response()->json(['data' => $sales]);
     }
 
     public function show(Sale $sale): Sale

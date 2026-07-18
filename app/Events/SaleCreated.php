@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Models\Sale;
+use App\Models\SaleEventLog;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -18,6 +19,68 @@ class SaleCreated implements ShouldBroadcast
     public function __construct(Sale $sale)
     {
         $this->sale = $sale;
+
+        // Log the event for audit/debug purposes (only in non-PROD)
+        if (env('APP_ENVIRONMENT', 'PROD') !== 'PROD') {
+            $this->logEvent();
+        }
+    }
+
+    /**
+     * Whether this sale has at least one item that requires preparation.
+     */
+    public function hasPreparationItems(): bool
+    {
+        return $this->sale->items()
+            ->whereHas('product', fn ($q) => $q->where('requires_preparation', true))
+            ->exists();
+    }
+
+    /**
+     * Log the event to the sale_event_logs table for audit purposes.
+     */
+    private function logEvent(): void
+    {
+        try {
+            $sale = $this->sale->loadMissing('items.product', 'organization');
+
+            $broadcastData = [
+                'id'            => $sale->id,
+                'number'        => $sale->number,
+                'org_id'        => $sale->org_id,
+                'customer_name' => $sale->customer_name,
+                'sold_at'       => $sale->sold_at?->toIso8601String(),
+                'organization'  => $sale->organization ? [
+                    'id'   => $sale->organization->id,
+                    'name' => $sale->organization->name,
+                ] : null,
+                'items'         => $sale->items->map(fn ($item) => [
+                    'id'       => $item->id,
+                    'quantity' => $item->quantity,
+                    'product'  => [
+                        'id'                  => $item->product->id,
+                        'name'                => $item->product->name,
+                        'description'         => $item->product->description,
+                        'image_s3'            => $item->product->image_s3,
+                        'requires_preparation'=> $item->product->requires_preparation,
+                    ],
+                ])->values()->toArray(),
+            ];
+
+            SaleEventLog::create([
+                'sale_id' => $sale->id,
+                'number' => $sale->number,
+                'org_id' => $sale->org_id,
+                'customer_name' => $sale->customer_name,
+                'has_preparation_items' => $sale->items->contains(
+                    fn ($item) => $item->product->requires_preparation === true
+                ),
+                'broadcast_data' => $broadcastData,
+            ]);
+        } catch (\Throwable $e) {
+            // Don't let logging interrupt the main flow
+            \Illuminate\Support\Facades\Log::warning('Failed to log SaleCreated event: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -46,21 +109,24 @@ class SaleCreated implements ShouldBroadcast
      */
     public function broadcastWhen(): bool
     {
-        return $this->sale->items()
-            ->whereHas('product', fn ($q) => $q->where('requires_preparation', true))
-            ->exists();
+        return $this->hasPreparationItems();
     }
 
     public function broadcastWith(): array
     {
-        // Load items with products so the KDS gets everything it needs in one push.
-        $sale = $this->sale->loadMissing('items.product');
+        // Load items with products and org so the KDS gets everything it needs in one push.
+        $sale = $this->sale->loadMissing('items.product', 'organization');
 
         return [
             'id'            => $sale->id,
             'number'        => $sale->number,
             'org_id'        => $sale->org_id,
             'customer_name' => $sale->customer_name,
+            'sold_at'       => $sale->sold_at?->toIso8601String(),
+            'organization'  => $sale->organization ? [
+                'id'   => $sale->organization->id,
+                'name' => $sale->organization->name,
+            ] : null,
             'items'         => $sale->items->map(fn ($item) => [
                 'id'       => $item->id,
                 'quantity' => $item->quantity,

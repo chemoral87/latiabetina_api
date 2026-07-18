@@ -156,6 +156,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('sale')->controller(SaleController::class)->group(function () {
     Route::get('/', 'index');
+    Route::get('/daily', 'daily');
     Route::get('/{sale}', 'show');
     Route::post('/', 'store');
     Route::put('/{sale}', 'update');
