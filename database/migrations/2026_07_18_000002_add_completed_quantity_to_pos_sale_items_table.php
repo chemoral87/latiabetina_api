@@ -1,0 +1,24 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('pos_sale_items', function (Blueprint $table) {
+            $table->integer('completed_quantity')->default(0)
+                ->after('quantity')
+                ->comment('Number of preparation units already completed for this sale item');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('pos_sale_items', function (Blueprint $table) {
+            $table->dropColumn('completed_quantity');
+        });
+    }
+};

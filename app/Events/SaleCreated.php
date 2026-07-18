@@ -20,8 +20,8 @@ class SaleCreated implements ShouldBroadcast
     {
         $this->sale = $sale;
 
-        // Log the event for audit/debug purposes (only in non-PROD)
-        if (env('APP_ENVIRONMENT', 'PROD') !== 'PROD') {
+        // Log the event for audit/debug purposes (always, except in production)
+        if (app()->environment() !== 'production') {
             $this->logEvent();
         }
     }

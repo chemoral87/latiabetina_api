@@ -30,6 +30,12 @@ class Sale extends Model
         'sold_at' => 'datetime',
     ];
 
+    public const STATUS_PENDING   = 'PEN';
+    public const STATUS_PREPARING = 'PRE';
+    public const STATUS_COMPLETED = 'COM';
+    public const STATUS_CANCELLED = 'CAN';
+    public const STATUS_REFUNDED  = 'REF';
+
     public function items()
     {
         return $this->hasMany(SaleItem::class, 'sale_id');

@@ -23,6 +23,15 @@ class InitSeeder extends Seeder {
       'role-index', 'role-create', 'role-update', 'role-delete',
       'permission-index', 'permission-create', 'permission-update', 'permission-delete',
       'organization-index',
+      'product-index', 'product-create', 'product-update', 'product-delete',
+      'sale-index', 'sale-create', 'sale-update', 'sale-delete',
+      'pos-kds',
+      'store-index', 'store-create', 'store-update', 'store-delete',
+      'expense-ticket-index',
+      'testimony-index',
+      'church-event-index',
+      'conso-sheet-index',
+      'ukelele-course',
       'alpha-special', 'alpha-view', 'beta-manage', 'beta-export',
     ];
     foreach ($permissions as $perm) {
