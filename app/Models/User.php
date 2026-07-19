@@ -27,6 +27,7 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
     'email',
     'password',
     'email_verified_at',
+    'last_login_at',
     'cellphone',
     'birthday',
     'google_id',
@@ -58,6 +59,7 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
    */
   protected $casts = [
     'email_verified_at' => 'datetime',
+    'last_login_at' => 'datetime',
   ];
 
   public function profiles() {

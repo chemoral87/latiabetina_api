@@ -19,6 +19,12 @@ class AuthController extends Controller {
 
     }
 
+    // Update last login time
+    $user = auth()->user();
+    if ($user) {
+      $user->update(['last_login_at' => now()]);
+    }
+
     return $this->respondWithToken($token);
   }
 

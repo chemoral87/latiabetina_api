@@ -53,6 +53,9 @@ class GoogleAuthController extends Controller {
 
       $user = $this->findOrCreateUser($googleUser);
 
+      // Update last login time
+      $user->update(['last_login_at' => now()]);
+
       // Generar token JWT
       $token = Auth::guard('api')->login($user);
 
@@ -102,6 +105,9 @@ class GoogleAuthController extends Controller {
         return response()->json(['error' => 'Invalid token'], 401);
       }
 
+      // Update last login time
+      $user->update(['last_login_at' => now()]);
+
       return response()->json([
         'access_token' => $token,
         'token_type' => 'bearer',
@@ -132,6 +138,9 @@ class GoogleAuthController extends Controller {
           'message' => 'Token inválido',
         ], 401);
       }
+
+      // Update last login time
+      $user->update(['last_login_at' => now()]);
 
       return response()->json([
         'access_token' => $request->token,

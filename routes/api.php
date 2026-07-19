@@ -1,4 +1,4 @@
-
+﻿
 
 <?php
 
@@ -68,7 +68,7 @@ Route::middleware('web')->prefix('auth/google')->controller(GoogleAuthController
   Route::get('callback', 'handleGoogleCallback');
 });
 
-// Ruta para mobile/SPA sin middleware de sesión
+// Ruta para mobile/SPA sin middleware de sesiÃ³n
 Route::post('auth/google/token', [GoogleAuthController::class, 'handleGoogleToken']);
 Route::post('auth/google/validate', [GoogleAuthController::class, 'validateToken']);
 
@@ -87,6 +87,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   Route::prefix('role')->controller(RoleController::class)->group(function () {
     Route::get('/', 'index');
     Route::get('/filter', 'filter');
+    Route::get('/{id}/distribution', 'distribution');
     Route::get('/{id}', 'show');
     Route::post('/', 'create');
     Route::put('/{id}', 'update');
@@ -262,3 +263,6 @@ Route::get('/test-google-user', function () {
     'resource' => new \App\Http\Resources\UserResource($user)
   ];
 });
+
+
+

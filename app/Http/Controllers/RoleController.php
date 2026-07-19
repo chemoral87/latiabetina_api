@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\DataSetResource;
 use App\Http\Resources\RoleShowResource;
+use App\Models\Profile;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -34,6 +35,24 @@ class RoleController extends Controller {
     return response()->json($userResource);
   }
 
+
+  public function distribution($id) {
+    $role = Role::findOrFail($id);
+    $profiles = Profile::whereHas('roles', function ($query) use ($role) {
+      $query->where('roles.id', $role->id);
+    })
+      ->with([
+        'user:id,name,last_name,second_last_name,email,last_login_at',
+        'organization:id,name,short_code',
+      ])
+      ->orderBy('user_id')
+      ->get();
+
+    return response()->json([
+      'role' => ['id' => $role->id, 'name' => $role->name],
+      'profiles' => $profiles,
+    ]);
+  }
   public function filter(Request $request) {
     $filter = $request->queryText;
     $ids = isset($request->ids) ? $request->ids : [];
@@ -95,3 +114,4 @@ class RoleController extends Controller {
   }
 
 }
+
