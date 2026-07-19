@@ -36,11 +36,18 @@ class RoleController extends Controller {
   }
 
 
-  public function distribution($id) {
+  public function distribution(Request $request, $id) {
     $role = Role::findOrFail($id);
-    $profiles = Profile::whereHas('roles', function ($query) use ($role) {
+    $query = Profile::whereHas('roles', function ($query) use ($role) {
       $query->where('roles.id', $role->id);
-    })
+    });
+
+    // Filter by organization if org_id is provided
+    if ($request->has('org_id') && $request->org_id) {
+      $query->where('org_id', $request->org_id);
+    }
+
+    $profiles = $query
       ->with([
         'user:id,name,last_name,second_last_name,email,last_login_at',
         'organization:id,name,short_code',
