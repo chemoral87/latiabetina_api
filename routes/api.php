@@ -140,6 +140,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   Route::prefix('permission')->controller(PermissionController::class)->group(function () {
     Route::get('/', 'index');
     Route::get('/filter', 'filter');
+    Route::get('/{id}/distribution', 'distribution');
     Route::post('/', 'create');
     Route::put('/{id}', 'update');
     Route::delete('/{id}', 'delete');
