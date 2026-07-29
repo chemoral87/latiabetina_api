@@ -33,6 +33,10 @@ class TestimonyController extends Controller {
       $query->whereNull("status");
     }
 
+    if ($orgId = $request->get('org_id')) {
+      $query->where('org_id', $orgId);
+    }
+
     $query = $this->applyOrgPermissionScope($query, $this->user, 'testimony-index');
 
     $testimonies = $query->paginate($request->get('itemsPerPage'));

@@ -35,7 +35,12 @@ class ProductController extends Controller
             $query->orderBy('name', 'asc');
         }
 
-        $products = $query->paginate($request->get('itemsPerPage'));
+        $perPage = $request->get('itemsPerPage', 10);
+        if ($perPage == -1) {
+            $perPage = $query->count() ?: 1;
+        }
+
+        $products = $query->paginate($perPage);
 
         return new DataSetResource($products);
     }

@@ -83,14 +83,12 @@ class AuditoriumController extends Controller {
     $userId = $user ? $user->id : null;
     $this->validate($request, [
       'name' => 'required',
-      'org_id' => 'required|integer',
       'config' => 'nullable|string',
     ]);
     $auditorium = Auditorium::findOrFail($id);
     $auditorium->update([
       'name' => $request->input('name'),
       'config' => $request->input('config'),
-      'org_id' => $request->input('org_id'),
       'last_updated_by' => $userId,
     ]);
     return ['success' => __('messa.auditorium_update', ['name' => $auditorium->name])];

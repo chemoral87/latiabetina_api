@@ -16,6 +16,7 @@ class UserResource extends JsonResource {
     $orgs = [];
     $allPermissions = [];
     $roles_orgs = [];
+    $roles_permissions = [];
 
     // Gather all permissions and roles from all profiles
     foreach ($this->profiles as $profile) {
@@ -29,6 +30,7 @@ class UserResource extends JsonResource {
         $roles_orgs[$role->name][$profile->org_id] = true;
         foreach ($role->permissions as $permission) {
           $allPermissions[$permission->name] = true;
+          $roles_permissions[$role->name][$permission->name] = true;
         }
       }
       foreach ($profile->permissions as $permission) {
@@ -39,11 +41,15 @@ class UserResource extends JsonResource {
     foreach (array_keys($allPermissions) as $permissionName) {
       $permissions_orgs[$permissionName] = $this->getOrgsByPermission($permissionName);
     }
-    // Convert roles map to array of org_ids
+    // Convert role maps to clean arrays
     foreach ($roles_orgs as &$orgIds) {
       $orgIds = array_keys($orgIds);
     }
     unset($orgIds);
+    foreach ($roles_permissions as &$perms) {
+      $perms = array_keys($perms);
+    }
+    unset($perms);
 
     return [
       'id' => $this->id,
@@ -55,6 +61,7 @@ class UserResource extends JsonResource {
       'permissions_org' => $permissions_orgs,
       'orgs' => $orgs,
       'roles_org' => $roles_orgs,
+      'roles_permissions' => $roles_permissions,
     ];
 
   }

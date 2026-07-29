@@ -38,6 +38,11 @@ class OrganizationController extends Controller {
   }
 
   public function create(Request $request) {
+    $this->validate($request, [
+      'name' => 'required|unique:organizations,name',
+      'short_code' => 'nullable',
+    ]);
+
     $organization = Organization::create([
       'name' => $request->get('name'),
       'short_code' => $request->get('short_code'),
@@ -47,6 +52,10 @@ class OrganizationController extends Controller {
   }
 
   public function update(Request $request, $id) {
+    $this->validate($request, [
+      'name' => 'required',
+    ]);
+
     $organization = Organization::find($id);
     $organization->name = $request->get('name');
     $organization->short_code = $request->get('short_code');

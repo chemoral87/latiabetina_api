@@ -66,6 +66,15 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
     return $this->hasMany(Profile::class);
   }
 
+  public function lifeGroupsAsLeader() {
+    return $this->belongsToMany(
+      \App\Models\LifeGroup\LifeGroup::class,
+      'life_group_leaders',
+      'user_id',
+      'life_group_id'
+    )->withTimestamps();
+  }
+
   /**
    * Returns an array of org_ids for a given permission, or a map of all permissions to org_ids if no permission is given.
    *

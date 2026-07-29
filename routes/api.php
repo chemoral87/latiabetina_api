@@ -1,5 +1,3 @@
-﻿
-
 <?php
 
 use App\Http\Controllers\AuditoriumController;
@@ -9,6 +7,7 @@ use App\Http\Controllers\AuditoriumEventSeatLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChurchEventController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\LifeGroupController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
@@ -45,6 +44,17 @@ Route::group(['middleware' => ['api']], function () {
     Route::post('user', 'me');
   });
 
+
+  // ========================
+  // Life Groups - Reports
+  // ========================
+  Route::prefix('life-groups/reports')->controller(\App\Http\Controllers\LifeGroupReportController::class)->group(function () {
+    Route::get('/attendance-by-session', 'attendanceBySession');
+    Route::get('/attendance-by-group', 'attendanceByGroup');
+    Route::get('/new-guests', 'newGuests');
+    Route::get('/recurrent-people', 'recurrentPeople');
+  });
+
   Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
     Route::get('/public', 'publicIndex');
     Route::post('/', 'store');
@@ -68,7 +78,7 @@ Route::middleware('web')->prefix('auth/google')->controller(GoogleAuthController
   Route::get('callback', 'handleGoogleCallback');
 });
 
-// Ruta para mobile/SPA sin middleware de sesiÃ³n
+// Ruta para mobile/SPA sin middleware de sesión
 Route::post('auth/google/token', [GoogleAuthController::class, 'handleGoogleToken']);
 Route::post('auth/google/validate', [GoogleAuthController::class, 'validateToken']);
 
@@ -114,15 +124,9 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('auditorium-event-seat')->controller(AuditoriumEventSeatController::class)->group(function () {
     Route::get('/', 'index');
-    // Route::get('/event/{eventId}', 'getByEvent');
-    // Route::get('/{id}', 'show');
     Route::post('/', 'store');
-    // Route::post('/batch', 'updateBatch');
-    // Route::put('/{id}', 'update');
-    // Route::delete('/{id}', 'destroy');
   });
 
-  
   Route::prefix('auditorium-event-seat-log')->controller(AuditoriumEventSeatLogController::class)->group(function () {
     Route::get('/', 'index');
   });
@@ -179,7 +183,6 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('profile')->controller(ProfileController::class)->group(function () {
     Route::get("/{user_id}", "index");
-    // Route::get("/filter", "{$controller}@filter");
     Route::get("/{user_id}/{id}", "show");
     Route::post("/{user_id}", "create");
     Route::post("/{user_id}/{id}/favorite", "favorite");
@@ -211,20 +214,50 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::delete('/{id}', 'delete');
   });
 
-    Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
-      Route::get('/', 'index');
-      Route::get("/{id}", 'show');
-      Route::put('/{id}/status', 'updateStatus');
-      Route::put("/{id}", "update");
-    });
-  
-    Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
-      Route::get('/status', 'status');
-      Route::post('/send', 'sendMessage');
-      Route::get('/logs', 'logs');
-    });
-  
+
+  // ========================
+  // Life Groups - Reports
+  // ========================
+  Route::prefix('life-groups/reports')->controller(\App\Http\Controllers\LifeGroupReportController::class)->group(function () {
+    Route::get('/attendance-by-session', 'attendanceBySession');
+    Route::get('/attendance-by-group', 'attendanceByGroup');
+    Route::get('/new-guests', 'newGuests');
+    Route::get('/recurrent-people', 'recurrentPeople');
   });
+
+  Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get("/{id}", 'show');
+    Route::put('/{id}/status', 'updateStatus');
+    Route::put("/{id}", "update");
+  });
+
+  Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
+    Route::get('/status', 'status');
+    Route::post('/send', 'sendMessage');
+    Route::get('/logs', 'logs');
+  });
+
+  // ========================
+  // Life Groups (Redes de Vida)
+  // ========================
+  Route::prefix('life-groups')->controller(LifeGroupController::class)->group(function () {
+    // Specific routes FIRST (before wildcard {id})
+    Route::get('/dashboard', 'dashboard');
+    Route::get('/people/search', 'searchPeople');
+    Route::post('/people', 'storePerson');
+    Route::get('/sessions/{sessionId}/attendance', 'getAttendance');
+    Route::post('/sessions/{sessionId}/attendance', 'registerAttendance');
+    Route::put('/sessions/{id}', 'updateSession');
+
+    // Wildcard routes LAST
+    Route::get('/', 'index');
+    Route::post('/', 'store');
+    Route::get('/{id}', 'show');
+    Route::put('/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
+  });
+});
 
 // Test WebSocket Route
 Route::get('/test-websocket', function () {
@@ -246,7 +279,7 @@ Route::get('/test-websocket', function () {
 Route::get('/test-google-user', function () {
   $user = \App\Models\User::orderBy('id', 'desc')->first();
   $token = \Illuminate\Support\Facades\Auth::guard('api')->login($user);
-  
+
   $permissions_orgs = [];
   $orgs = [];
   try {
@@ -256,14 +289,10 @@ Route::get('/test-google-user', function () {
   } catch (\Exception $e) {
       return ['error' => 'profiles error: ' . $e->getMessage()];
   }
-  
+
   return [
     'user_id' => $user->id,
     'token' => $token,
-    // Try to get UserResource to see if it fails
     'resource' => new \App\Http\Resources\UserResource($user)
   ];
 });
-
-
-

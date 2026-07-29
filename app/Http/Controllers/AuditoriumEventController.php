@@ -27,14 +27,17 @@ class AuditoriumEventController extends Controller {
 
     $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-index', 'auditorium_events.org_id');
 
-    $itemsPerPage = $request->get('itemsPerPage');
+    $itemsPerPage = (int) $request->get('itemsPerPage', 15);
+    if ($itemsPerPage < 1 || $itemsPerPage > 15) {
+      $itemsPerPage = 15;
+    }
     $sortBy = $request->get('sortBy');
     $sortDesc = $request->get('sortDesc');
     $filter = $request->get('filter');
 
     if ($request->has('org_id') && !empty($request->get('org_id'))) {
       $org_id = $request->get('org_id');
-      $query->where('org_id', $org_id);
+      $query->where('auditorium_events.org_id', $org_id);
     }
 
     if ($request->has('date') && !empty($request->get('date'))) {
