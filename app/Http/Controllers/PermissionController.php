@@ -43,7 +43,7 @@ class PermissionController extends Controller {
 
     ]);
 
-    $role = Permission::create(['name' => $request->input('name')]);
+    $permission = Permission::create(['name' => $request->input('name'), 'guard_name' => 'api']);
 
     return [
       'success' => __('messa.permission_create'),

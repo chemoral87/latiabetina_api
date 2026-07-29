@@ -48,7 +48,10 @@ class OrganizationController extends Controller {
       'short_code' => $request->get('short_code'),
       'description' => $request->get('description'),
     ]);
-    return ['success' => __('messa.organization_create')];
+    return [
+      'success' => __('messa.organization_create'),
+      'data' => $organization,
+    ];
   }
 
   public function update(Request $request, $id) {
@@ -61,7 +64,10 @@ class OrganizationController extends Controller {
     $organization->short_code = $request->get('short_code');
     $organization->description = $request->get('description');
     $organization->save();
-    return ['success' => __('messa.organization_update')];
+    return [
+      'success' => __('messa.organization_update'),
+      'data' => $organization,
+    ];
   }
 
   public function delete($id) {

@@ -61,7 +61,12 @@ class UserController extends Controller {
     Notification::route("mail", $request->get("email"))
       ->notify(new UserPasswordNotification($req + ['password' => $random_password, 'cellphone' => $request->get("cellphone")]));
 
-    return ['success' => __('messa.user_create'), 'id' => $user->id];
+    $user->load('roles', 'permissions');
+
+    return [
+      'success' => __('messa.user_create'),
+      'data' => $user,
+    ];
   }
 
   public function update(Request $request, $id) {
@@ -80,7 +85,11 @@ class UserController extends Controller {
     }
 
     $user->save();
-    return ['success' => __('messa.user_update')];
+    $user->load('roles', 'permissions');
+    return [
+      'success' => __('messa.user_update'),
+      'data' => $user,
+    ];
   }
 
   public function filter(Request $request) {

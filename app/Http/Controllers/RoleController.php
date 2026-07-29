@@ -76,10 +76,14 @@ class RoleController extends Controller {
 
     ]);
 
-    $role = Role::create(['name' => $request->input('name')]);
+    $role = Role::create(['name' => $request->input('name'), 'guard_name' => 'api']);
     $role->syncPermissions($request->permissions);
+    $role->load('permissions');
 
-    return response()->json(['success' => __('messa.role_create')]);
+    return response()->json([
+      'success' => __('messa.role_create'),
+      'data' => $role,
+    ]);
   }
 
   public function update(Request $request, $id) {
@@ -87,8 +91,11 @@ class RoleController extends Controller {
     $role = Role::find($id);
     $role->name = $request->input('name');
     $role->save();
-    // $role->syncPermissions($request->input('permissions'));
-    return ['success' => __('messa.role_update')];
+    $role->load('permissions');
+    return [
+      'success' => __('messa.role_update'),
+      'data' => $role,
+    ];
   }
 
   public function children(Request $request, $id) {
