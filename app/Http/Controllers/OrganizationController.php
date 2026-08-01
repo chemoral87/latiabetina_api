@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class OrganizationController extends Controller {
   public function index(Request $request) {
+    $user = auth('api')->user();
+    if (!$user || !$user->can('organization-index')) {
+      abort(403, 'No tienes permiso para listar organizaciones.');
+    }
+
     $filter = $request->get("filter");
     $query = queryServerSide($request, Organization::query());
     if ($filter) {
