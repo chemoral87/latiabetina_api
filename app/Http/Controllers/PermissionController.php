@@ -9,6 +9,13 @@ use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller {
   public function index(Request $request) {
+    $user = auth('api')->user();
+    $permission = 'permission-index';
+    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
+    if (!$user || !isset($permissions_orgs[$permission])) {
+      return response()->json(['error' => "No tienes permiso para listar permisos. Se requiere el permiso: {$permission}"], 403);
+    }
+
     $query = Permission::query();
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
@@ -38,6 +45,13 @@ class PermissionController extends Controller {
   }
 
   public function create(Request $request) {
+    $user = auth('api')->user();
+    $permission = 'permission-create';
+    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
+    if (!$user || !isset($permissions_orgs[$permission])) {
+      return response()->json(['error' => "No tienes permiso para crear permisos. Se requiere el permiso: {$permission}"], 403);
+    }
+
     $this->validate($request, [
       'name' => 'required|unique:permissions,name',
 
@@ -51,6 +65,13 @@ class PermissionController extends Controller {
   }
 
   public function update(Request $request, $id) {
+    $user = auth('api')->user();
+    $permission = 'permission-update';
+    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
+    if (!$user || !isset($permissions_orgs[$permission])) {
+      return response()->json(['error' => "No tienes permiso para actualizar permisos. Se requiere el permiso: {$permission}"], 403);
+    }
+
     $this->validate($request, [
       'name' => 'required',
 
@@ -106,6 +127,13 @@ class PermissionController extends Controller {
   }
 
   public function delete($id) {
+    $user = auth('api')->user();
+    $permission = 'permission-delete';
+    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
+    if (!$user || !isset($permissions_orgs[$permission])) {
+      return response()->json(['error' => "No tienes permiso para eliminar permisos. Se requiere el permiso: {$permission}"], 403);
+    }
+
     Permission::find($id)->delete();
     return ['success' => __('messa.permission_delete')];
   }

@@ -63,7 +63,7 @@ class AuditoriumController extends Controller {
     $user = $this->user;
     $userId = $user ? $user->id : null;
     $this->validate($request, [
-      'name' => 'required|unique:auditoriums,name',
+      'name' => 'required',
       'org_id' => 'required|integer',
       'config' => 'nullable|string',
       'created_by' => 'nullable|integer',
