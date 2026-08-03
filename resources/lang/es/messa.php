@@ -84,6 +84,10 @@ return [
   'auditorium_update' => 'Auditorio :name guardado',
   'auditorium_delete' => 'Auditorio eliminado',
 
+  'auditorium_event_create' => 'Evento de auditorio creado',
+  'auditorium_event_update' => 'Evento de auditorio guardado',
+  'auditorium_event_delete' => 'Evento de auditorio eliminado',
+
   'church_event_create' => 'Evento :name creado',
   'church_event_update' => 'Evento :name guardado',
   'church_event_delete' => 'Evento eliminado',

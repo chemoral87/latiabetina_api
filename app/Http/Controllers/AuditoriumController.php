@@ -75,7 +75,7 @@ class AuditoriumController extends Controller {
       'created_by' => $userId,
       'last_updated_by' => $userId,
     ]);
-    return ['success' => __('messa.auditorium_create', ['name' => $auditorium->name])];
+    return ['success' => __('messa.auditorium_create', ['name' => $auditorium->name]), 'data' => $auditorium];
   }
 
   public function update(Request $request, $id) {
@@ -91,7 +91,7 @@ class AuditoriumController extends Controller {
       'config' => $request->input('config'),
       'last_updated_by' => $userId,
     ]);
-    return ['success' => __('messa.auditorium_update', ['name' => $auditorium->name])];
+    return ['success' => __('messa.auditorium_update', ['name' => $auditorium->name]), 'data' => $auditorium];
   }
 
   public function delete($id) {

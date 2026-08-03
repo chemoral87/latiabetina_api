@@ -8,13 +8,6 @@ use Illuminate\Http\Request;
 
 class OrganizationController extends Controller {
   public function index(Request $request) {
-    $user = auth('api')->user();
-    $permission = 'organization-index';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para listar organizaciones. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $filter = $request->get("filter");
     $query = queryServerSide($request, Organization::query());
     if ($filter) {
@@ -45,13 +38,6 @@ class OrganizationController extends Controller {
   }
 
   public function create(Request $request) {
-    $user = auth('api')->user();
-    $permission = 'organization-create';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para crear organizaciones. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $this->validate($request, [
       'name' => 'required|unique:organizations,name',
       'short_code' => 'nullable',
@@ -69,13 +55,6 @@ class OrganizationController extends Controller {
   }
 
   public function update(Request $request, $id) {
-    $user = auth('api')->user();
-    $permission = 'organization-update';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para actualizar organizaciones. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $this->validate($request, [
       'name' => 'required',
     ]);
@@ -92,13 +71,6 @@ class OrganizationController extends Controller {
   }
 
   public function delete($id) {
-    $user = auth('api')->user();
-    $permission = 'organization-delete';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para eliminar organizaciones. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $organization = Organization::find($id);
     $organization->delete();
     return ['success' => __('messa.organization_delete')];

@@ -12,13 +12,6 @@ use Spatie\Permission\Models\Role;
 class RoleController extends Controller {
   // https://codingdriver.com/laravel-user-roles-and-permissions-tutorial-with-example.html
   public function index(Request $request) {
-    $user = auth('api')->user();
-    $permission = 'role-index';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para listar roles. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $query = new Role;
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
@@ -78,13 +71,6 @@ class RoleController extends Controller {
   }
 
   public function create(Request $request) {
-    $user = auth('api')->user();
-    $permission = 'role-create';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para crear roles. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $this->validate($request, [
       'name' => 'required|unique:roles,name',
 
@@ -101,13 +87,6 @@ class RoleController extends Controller {
   }
 
   public function update(Request $request, $id) {
-    $user = auth('api')->user();
-    $permission = 'role-update';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para actualizar roles. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $this->validate($request, ['name' => 'required']);
     $role = Role::find($id);
     $role->name = $request->input('name');
@@ -144,13 +123,6 @@ class RoleController extends Controller {
   }
 
   public function delete($id) {
-    $user = auth('api')->user();
-    $permission = 'role-delete';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para eliminar roles. Se requiere el permiso: {$permission}"], 403);
-    }
-
     Role::find($id)->delete();
     return ['success' => __('messa.role_delete')];
   }

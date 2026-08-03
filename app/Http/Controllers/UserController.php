@@ -19,13 +19,6 @@ class UserController extends Controller {
 
     // Log::info($request);
 
-    $user = auth('api')->user();
-    $permission = 'user-index';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para listar usuarios. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $query = User::query();
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
@@ -51,13 +44,6 @@ class UserController extends Controller {
   }
 
   public function create(Request $request) {
-    $user = auth('api')->user();
-    $permission = 'user-create';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para crear usuarios. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $req = $this->validate($request, [
       'name' => 'required',
       'last_name' => 'required',
@@ -84,13 +70,6 @@ class UserController extends Controller {
   }
 
   public function update(Request $request, $id) {
-    $user = auth('api')->user();
-    $permission = 'user-update';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para actualizar usuarios. Se requiere el permiso: {$permission}"], 403);
-    }
-
     $this->validate($request, [
       'name' => 'required',
       'last_name' => 'required',
@@ -136,13 +115,6 @@ class UserController extends Controller {
   }
 
   public function delete($id) {
-    $user = auth('api')->user();
-    $permission = 'user-delete';
-    $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para eliminar usuarios. Se requiere el permiso: {$permission}"], 403);
-    }
-
     if ($id != 1) {
       // admin
       User::find($id)->delete();

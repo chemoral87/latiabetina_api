@@ -6,9 +6,9 @@ use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\Auditorium;
 use App\Models\AuditoriumEvent;
+use App\Models\Organization;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
 
 class AuditoriumEventController extends Controller {
   use AppliesOrgPermissionScope;
@@ -118,7 +118,14 @@ class AuditoriumEventController extends Controller {
     $data['config'] = $auditorium->config;
 
     $event = AuditoriumEvent::create($data);
-    return response()->json($event, 201);
+    // Flat display names so the newly created row shows correctly in the
+    // table without a reload (matches the index() joined columns).
+    $event->auditorium_name = $auditorium->name;
+    $event->org_name = Organization::find($event->org_id)?->name ?? '';
+    return [
+      'success' => __('messa.auditorium_event_create'),
+      'data' => $event,
+    ];
   }
 
   public function update(Request $request, $id) {
@@ -135,12 +142,15 @@ class AuditoriumEventController extends Controller {
     $data['config'] = $auditorium->config;
 
     $event->update($data);
-    return response()->json($event);
+    return [
+      'success' => __('messa.auditorium_event_update'),
+      'data' => $event,
+    ];
   }
 
   public function destroy($id) {
     $event = AuditoriumEvent::findOrFail($id);
     $event->delete();
-    return response()->json(['message' => 'Auditorium event deleted']);
+    return ['success' => __('messa.auditorium_event_delete')];
   }
 }
