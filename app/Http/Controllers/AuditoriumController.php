@@ -49,6 +49,20 @@ class AuditoriumController extends Controller {
     return new DataSetResource($auditoriums);
   }
 
+  public function filter(Request $request) {
+    $filter = $request->queryText;
+    $ids = isset($request->ids) ? $request->ids : [];
+    $query = Auditorium::select("auditoriums.id", "auditoriums.name", "auditoriums.org_id")
+      ->whereNotIn("auditoriums.id", $ids)
+      ->where("auditoriums.name", "like", "%" . $filter . "%")
+      ->orderBy("auditoriums.name");
+    $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-index', 'auditoriums.org_id');
+    if ($request->has('org_id') && !empty($request->get('org_id'))) {
+      $query->where('auditoriums.org_id', $request->get('org_id'));
+    }
+    return $query->paginate(4)->items();
+  }
+
   public function show(Request $request, $id) {
     $user = $this->user;
     $auditorium = Auditorium::findOrFail($id);

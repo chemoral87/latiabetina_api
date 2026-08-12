@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\SaleCreated;
 use App\Events\SaleCompleted;
+use App\Events\SaleStatusUpdated;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
 use App\Models\Product;
@@ -302,6 +303,12 @@ class SaleController extends Controller
             $sale->status = Sale::STATUS_COMPLETED;
             $sale->save();
             event(new SaleCompleted($sale));
+        } elseif ($pendingItems > 0 && $sale->status === Sale::STATUS_COMPLETED) {
+            // An item was undone on a completed sale — reopen it so the order
+            // returns to the KDS board and the sales list shows it as preparing.
+            $sale->status = Sale::STATUS_PREPARING;
+            $sale->save();
+            event(new SaleStatusUpdated($sale));
         }
 
         return response()->json([

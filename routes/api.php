@@ -108,6 +108,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('auditorium')->controller(AuditoriumController::class)->group(function () {
     Route::get('/', 'index');
+    Route::get('/filter', 'filter');
     Route::get('/{id}', 'show');
     Route::post('/', 'create');
     Route::put('/{id}', 'update');
@@ -115,11 +116,11 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('auditorium-event')->controller(AuditoriumEventController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/{id}', 'show');
-    Route::post('/', 'store');
-    Route::put('/{id}', 'update');
-    Route::delete('/{id}', 'destroy');
+    Route::get('/', 'index')->middleware('permission_org:auditorium-event-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:auditorium-event-index');
+    Route::post('/', 'store')->middleware('permission_org:auditorium-event-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:auditorium-event-update');
+    Route::delete('/{id}', 'destroy')->middleware('permission_org:auditorium-event-delete');
   });
 
   Route::prefix('auditorium-event-seat')->controller(AuditoriumEventSeatController::class)->group(function () {
@@ -182,12 +183,12 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('profile')->controller(ProfileController::class)->group(function () {
-    Route::get("/{user_id}", "index");
-    Route::get("/{user_id}/{id}", "show");
-    Route::post("/{user_id}", "create");
+    Route::get("/{user_id}", "index")->middleware('permission_org:profile-index');
+    Route::get("/{user_id}/{id}", "show")->middleware('permission_org:profile-index');
+    Route::post("/{user_id}", "create")->middleware('permission_org:profile-create');
     Route::post("/{user_id}/{id}/favorite", "favorite");
-    Route::put("/{user_id}/{id}", "update");
-    Route::delete("/{user_id}/{id}", "delete");
+    Route::put("/{user_id}/{id}", "update")->middleware('permission_org:profile-update');
+    Route::delete("/{user_id}/{id}", "delete")->middleware('permission_org:profile-delete');
   });
 
   Route::prefix('store')->controller(StoreController::class)->group(function () {

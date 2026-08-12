@@ -138,10 +138,15 @@ class AuditoriumEventController extends Controller {
       'org_id' => 'sometimes|exists:organizations,id',
     ]);
 
-    $auditorium = Auditorium::findOrFail($event->auditorium_id);
+    $auditoriumId = $data['auditorium_id'] ?? $event->auditorium_id;
+    $auditorium = Auditorium::findOrFail($auditoriumId);
     $data['config'] = $auditorium->config;
 
     $event->update($data);
+    // Flat display names so the edited row shows correctly in the table
+    // without a reload (matches the index() joined columns).
+    $event->auditorium_name = $auditorium->name;
+    $event->org_name = Organization::find($event->org_id)?->name ?? '';
     return [
       'success' => __('messa.auditorium_event_update'),
       'data' => $event,
