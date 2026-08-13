@@ -30,7 +30,7 @@ class InitSeeder extends Seeder {
       'sale-index', 'sale-create', 'sale-update', 'sale-delete',
       'pos-kds',
       'store-index', 'store-create', 'store-update', 'store-delete',
-      'expense-ticket-index',
+      'expense-ticket-index', 'expense-ticket-create', 'expense-ticket-update', 'expense-ticket-delete',
       'testimony-index', 'testimony-create', 'testimony-update', 'testimony-delete',
       'church-event-index', 'church-event-create', 'church-event-update', 'church-event-delete',
       'conso-sheet-index', 'conso-sheet-create', 'conso-sheet-update', 'conso-sheet-delete',
@@ -93,7 +93,7 @@ class InitSeeder extends Seeder {
     }
 
     // create roles
-    $role1 = Role::create(['name' => 'super', 'guard_name' => 'web']);
+    $role1 = Role::firstOrCreate(['name' => 'super', 'guard_name' => 'web']);
     $role1->givePermissionTo([
       'role-index', 'role-create', 'role-update', 'role-delete',
       'user-index', 'user-create', 'user-update', 'user-delete',
@@ -106,30 +106,32 @@ class InitSeeder extends Seeder {
       'sale-index', 'sale-create', 'sale-update', 'sale-delete',
       'pos-kds',
       'store-index', 'store-create', 'store-update', 'store-delete',
-      'expense-ticket-index',
+      'expense-ticket-index', 'expense-ticket-create', 'expense-ticket-update', 'expense-ticket-delete',
       'testimony-index', 'testimony-create', 'testimony-update', 'testimony-delete',
       'church-event-index', 'church-event-create', 'church-event-update', 'church-event-delete',
       'conso-sheet-index', 'conso-sheet-create', 'conso-sheet-update', 'conso-sheet-delete',
       'ukelele-course',
     ]);
 
-    $managerRole = Role::create(['name' => 'manager', 'guard_name' => 'web']);
+    $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
     $managerRole->givePermissionTo(['user-index', 'role-index', 'permission-index']);
 
-    Role::create(['name' => 'publisher', 'guard_name' => 'web']);
-    Role::create(['name' => 'cashier', 'guard_name' => 'web']);
-    Role::create(['name' => 'leader', 'guard_name' => 'web']);
-    Role::create(['name' => 'worker', 'guard_name' => 'web']);
-    Role::create(['name' => 'auditor', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'publisher', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'leader', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'worker', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'auditor', 'guard_name' => 'web']);
 
     // create demo user
-    $user = User::create([
-      'name' => 'Sergio',
-      'last_name' => 'Morales',
-      'second_last_name' => 'Parra',
-      'email' => 'chemoral87@hotmail.com',
-      'password' => Hash::make('admin'),
-    ]);
+    $user = User::firstOrCreate(
+      ['email' => 'chemoral87@hotmail.com'],
+      [
+        'name' => 'Sergio',
+        'last_name' => 'Morales',
+        'second_last_name' => 'Parra',
+        'password' => Hash::make('admin'),
+      ]
+    );
 
     // create organizations (idempotent)
     $orgAdmin = Organization::firstOrCreate(

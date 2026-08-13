@@ -20,4 +20,8 @@ class ExpenseTicket extends Model {
   public function images() {
     return $this->hasMany(ExpenseTicketImage::class);
   }
+
+  public function store() {
+    return $this->belongsTo(Store::class);
+  }
 }

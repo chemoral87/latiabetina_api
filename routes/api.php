@@ -19,6 +19,10 @@ use App\Http\Controllers\TestimonyController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ChurchMemberController;
 use App\Http\Controllers\ConsoSheetController;
+use App\Http\Controllers\ExpenseCategoriesController;
+use App\Http\Controllers\ExpenseConceptsController;
+use App\Http\Controllers\ExpensesController;
+use App\Http\Controllers\ExpenseTicketsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -197,6 +201,38 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::post("/", 'create')->middleware('permission_org:store-create');
     Route::put("/{id}", 'update')->middleware('permission_org:store-update');
     Route::delete("/{id}", 'delete')->middleware('permission_org:store-delete');
+  });
+
+  Route::prefix('expense-tickets')->controller(ExpenseTicketsController::class)->group(function () {
+    Route::get('/', 'index')->middleware('permission_org:expense-ticket-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:expense-ticket-index');
+    Route::post('/', 'create')->middleware('permission_org:expense-ticket-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:expense-ticket-update');
+    Route::delete('/{id}', 'delete')->middleware('permission_org:expense-ticket-delete');
+  });
+
+  Route::prefix('expenses')->controller(ExpensesController::class)->group(function () {
+    Route::get('/', 'index')->middleware('permission_org:expense-ticket-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:expense-ticket-index');
+    Route::post('/', 'create')->middleware('permission_org:expense-ticket-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:expense-ticket-update');
+    Route::delete('/{id}', 'delete')->middleware('permission_org:expense-ticket-delete');
+  });
+
+  Route::prefix('expense-categories')->controller(ExpenseCategoriesController::class)->group(function () {
+    Route::get('/', 'index')->middleware('permission_org:expense-ticket-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:expense-ticket-index');
+    Route::post('/', 'create')->middleware('permission_org:expense-ticket-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:expense-ticket-update');
+    Route::delete('/{id}', 'delete')->middleware('permission_org:expense-ticket-delete');
+  });
+
+  Route::prefix('expense-concepts')->controller(ExpenseConceptsController::class)->group(function () {
+    Route::get('/', 'index')->middleware('permission_org:expense-ticket-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:expense-ticket-index');
+    Route::post('/', 'create')->middleware('permission_org:expense-ticket-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:expense-ticket-update');
+    Route::delete('/{id}', 'delete')->middleware('permission_org:expense-ticket-delete');
   });
 
   Route::prefix('conso-sheet')->controller(ConsoSheetController::class)->group(function () {
