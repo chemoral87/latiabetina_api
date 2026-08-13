@@ -8,7 +8,9 @@ Permiso `organization-index` en la API.
 
 ## Routes protected
 
-- `GET /organization → OrganizationController@index`
+- `GET /organization -> OrganizationController@index`
+- `GET /organization/filter -> OrganizationController@filter`
+- `GET /organization/{id} -> OrganizationController@show`
 
 ## Enforced by
 

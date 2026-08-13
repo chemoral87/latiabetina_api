@@ -8,7 +8,7 @@ Permiso `permission-delete` en la API.
 
 ## Routes protected
 
-- `DELETE /permission/{id} → PermissionController@delete`
+- `DELETE /permission/{id} -> PermissionController@delete`
 
 ## Enforced by
 

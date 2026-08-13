@@ -8,7 +8,7 @@ Permiso `role-delete` en la API.
 
 ## Routes protected
 
-- `DELETE /role/{id} → RoleController@delete`
+- `DELETE /role/{id} -> RoleController@delete`
 
 ## Enforced by
 

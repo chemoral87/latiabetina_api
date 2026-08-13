@@ -8,7 +8,9 @@ Permiso `user-index` en la API.
 
 ## Routes protected
 
-- `GET /user → UserController@index`
+- `GET /user -> UserController@index`
+- `GET /user/filter -> UserController@filter`
+- `GET /user/{id} -> UserController@show`
 
 ## Enforced by
 

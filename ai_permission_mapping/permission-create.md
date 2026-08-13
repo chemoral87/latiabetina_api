@@ -8,7 +8,7 @@ Permiso `permission-create` en la API.
 
 ## Routes protected
 
-- `POST /permission → PermissionController@create`
+- `POST /permission -> PermissionController@create`
 
 ## Enforced by
 

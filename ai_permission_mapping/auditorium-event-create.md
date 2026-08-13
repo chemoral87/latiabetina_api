@@ -8,8 +8,10 @@ Permiso `auditorium-event-create` en la API.
 
 ## Routes protected
 
-- `POST /auditorium-event → AuditoriumEventController@store`
+- `POST /auditorium-event -> AuditoriumEventController@store`
 
 ## Enforced by
 
 - `app\Http\Middleware\CheckOrgPermission.php` (middleware `permission_org`)
+
+> Nota: AuditoriumEventController aplica el scope por organización con `auditorium-index` (no `auditorium-event-create`).

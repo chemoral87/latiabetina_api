@@ -8,8 +8,10 @@ Permiso `auditorium-event-update` en la API.
 
 ## Routes protected
 
-- `PUT /auditorium-event/{id} → AuditoriumEventController@update`
+- `PUT /auditorium-event/{id} -> AuditoriumEventController@update`
 
 ## Enforced by
 
 - `app\Http\Middleware\CheckOrgPermission.php` (middleware `permission_org`)
+
+> Nota: AuditoriumEventController aplica el scope por organización con `auditorium-index` (no `auditorium-event-update`).

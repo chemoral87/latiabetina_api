@@ -8,11 +8,14 @@ Permiso `auditorium-event-index` en la API.
 
 ## Routes protected
 
-- `GET /auditorium-event → AuditoriumEventController@index`
-- `GET /auditorium-event/{id} → AuditoriumEventController@show`
+- `GET /auditorium-event -> AuditoriumEventController@index`
+- `GET /auditorium-event-seat -> AuditoriumEventSeatController@index`
+- `GET /auditorium-event-seat-log -> AuditoriumEventSeatLogController@index`
+- `GET /auditorium-event/{id} -> AuditoriumEventController@show`
+- `POST /auditorium-event-seat -> AuditoriumEventSeatController@store`
 
 ## Enforced by
 
 - `app\Http\Middleware\CheckOrgPermission.php` (middleware `permission_org`)
 
-> Nota: AuditoriumEventController aplica el scope por organización usando `auditorium-index` (no `auditorium-event-index`).
+> Nota: AuditoriumEventController aplica el scope por organización con `auditorium-index` (no `auditorium-event-index`).

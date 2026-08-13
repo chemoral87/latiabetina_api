@@ -8,7 +8,7 @@ Permiso `profile-update` en la API.
 
 ## Routes protected
 
-- `PUT /profile/{user_id}/{id} → ProfileController@update`
+- `PUT /profile/{user_id}/{id} -> ProfileController@update`
 
 ## Enforced by
 

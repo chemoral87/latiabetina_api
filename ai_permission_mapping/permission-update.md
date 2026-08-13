@@ -8,7 +8,7 @@ Permiso `permission-update` en la API.
 
 ## Routes protected
 
-- `PUT /permission/{id} → PermissionController@update`
+- `PUT /permission/{id} -> PermissionController@update`
 
 ## Enforced by
 

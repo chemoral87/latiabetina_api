@@ -85,25 +85,25 @@ Route::post('auth/google/validate', [GoogleAuthController::class, 'validateToken
 Route::group(['middleware' => ['jwt.verify']], function () {
   Route::prefix('user')->controller(UserController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:user-index');
-    Route::get('/filter', 'filter');
-    Route::get('/{id}', 'show');
+    Route::get('/filter', 'filter')->middleware('permission_org:user-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:user-index');
     Route::post('/', 'create')->middleware('permission_org:user-create');
     Route::put('/{id}', 'update')->middleware('permission_org:user-update');
-    Route::put('/{id}/children', 'children');
+    Route::put('/{id}/children', 'children')->middleware('permission_org:user-update');
     Route::delete('/{id}', 'delete')->middleware('permission_org:user-delete');
     Route::post('/change', 'changePassword');
   });
 
   Route::prefix('role')->controller(RoleController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:role-index');
-    Route::get('/filter', 'filter');
-    Route::get('/{id}/distribution', 'distribution');
-    Route::get('/{id}', 'show');
+    Route::get('/filter', 'filter')->middleware('permission_org:role-index');
+    Route::get('/{id}/distribution', 'distribution')->middleware('permission_org:role-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:role-index');
     Route::post('/', 'create')->middleware('permission_org:role-create');
     Route::put('/{id}', 'update')->middleware('permission_org:role-update');
     Route::delete('/{id}', 'delete')->middleware('permission_org:role-delete');
-    Route::put('/{id}/children', 'children');
-    Route::post('/{id}/permission', 'addPermission');
+    Route::put('/{id}/children', 'children')->middleware('permission_org:role-update');
+    Route::post('/{id}/permission', 'addPermission')->middleware('permission_org:role-update');
   });
 
   Route::prefix('auditorium')->controller(AuditoriumController::class)->group(function () {
@@ -144,8 +144,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('permission')->controller(PermissionController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:permission-index');
-    Route::get('/filter', 'filter');
-    Route::get('/{id}/distribution', 'distribution');
+    Route::get('/filter', 'filter')->middleware('permission_org:permission-index');
+    Route::get('/{id}/distribution', 'distribution')->middleware('permission_org:permission-index');
     Route::post('/', 'create')->middleware('permission_org:permission-create');
     Route::put('/{id}', 'update')->middleware('permission_org:permission-update');
     Route::delete('/{id}', 'delete')->middleware('permission_org:permission-delete');
@@ -175,8 +175,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('organization')->controller(OrganizationController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:organization-index');
-    Route::get('/filter', 'filter');
-    Route::get('/{id}', 'show');
+    Route::get('/filter', 'filter')->middleware('permission_org:organization-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:organization-index');
     Route::post('/', 'create')->middleware('permission_org:organization-create');
     Route::put('/{id}', 'update')->middleware('permission_org:organization-update');
     Route::delete('/{id}', 'delete')->middleware('permission_org:organization-delete');

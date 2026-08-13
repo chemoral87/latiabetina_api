@@ -8,7 +8,7 @@ Permiso `organization-update` en la API.
 
 ## Routes protected
 
-- `PUT /organization/{id} → OrganizationController@update`
+- `PUT /organization/{id} -> OrganizationController@update`
 
 ## Enforced by
 

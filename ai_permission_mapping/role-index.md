@@ -8,7 +8,10 @@ Permiso `role-index` en la API.
 
 ## Routes protected
 
-- `GET /role → RoleController@index`
+- `GET /role -> RoleController@index`
+- `GET /role/filter -> RoleController@filter`
+- `GET /role/{id} -> RoleController@show`
+- `GET /role/{id}/distribution -> RoleController@distribution`
 
 ## Enforced by
 

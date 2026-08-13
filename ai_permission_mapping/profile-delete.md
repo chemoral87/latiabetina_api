@@ -8,7 +8,7 @@ Permiso `profile-delete` en la API.
 
 ## Routes protected
 
-- `DELETE /profile/{user_id}/{id} → ProfileController@delete`
+- `DELETE /profile/{user_id}/{id} -> ProfileController@delete`
 
 ## Enforced by
 

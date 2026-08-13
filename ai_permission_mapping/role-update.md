@@ -8,7 +8,9 @@ Permiso `role-update` en la API.
 
 ## Routes protected
 
-- `PUT /role/{id} → RoleController@update`
+- `POST /role/{id}/permission -> RoleController@addPermission`
+- `PUT /role/{id} -> RoleController@update`
+- `PUT /role/{id}/children -> RoleController@children`
 
 ## Enforced by
 

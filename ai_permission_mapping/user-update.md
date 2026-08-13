@@ -8,7 +8,8 @@ Permiso `user-update` en la API.
 
 ## Routes protected
 
-- `PUT /user/{id} → UserController@update`
+- `PUT /user/{id} -> UserController@update`
+- `PUT /user/{id}/children -> UserController@children`
 
 ## Enforced by
 

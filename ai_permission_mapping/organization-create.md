@@ -8,7 +8,7 @@ Permiso `organization-create` en la API.
 
 ## Routes protected
 
-- `POST /organization → OrganizationController@create`
+- `POST /organization -> OrganizationController@create`
 
 ## Enforced by
 

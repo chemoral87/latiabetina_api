@@ -8,7 +8,7 @@ Permiso `user-create` en la API.
 
 ## Routes protected
 
-- `POST /user → UserController@create`
+- `POST /user -> UserController@create`
 
 ## Enforced by
 

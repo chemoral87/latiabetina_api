@@ -8,8 +8,8 @@ Permiso `profile-index` en la API.
 
 ## Routes protected
 
-- `GET /profile/{user_id} → ProfileController@index`
-- `GET /profile/{user_id}/{id} → ProfileController@show`
+- `GET /profile/{user_id} -> ProfileController@index`
+- `GET /profile/{user_id}/{id} -> ProfileController@show`
 
 ## Enforced by
 

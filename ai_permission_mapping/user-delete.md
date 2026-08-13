@@ -8,7 +8,7 @@ Permiso `user-delete` en la API.
 
 ## Routes protected
 
-- `DELETE /user/{id} → UserController@delete`
+- `DELETE /user/{id} -> UserController@delete`
 
 ## Enforced by
 

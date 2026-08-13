@@ -8,7 +8,7 @@ Permiso `profile-create` en la API.
 
 ## Routes protected
 
-- `POST /profile/{user_id} → ProfileController@create`
+- `POST /profile/{user_id} -> ProfileController@create`
 
 ## Enforced by
 

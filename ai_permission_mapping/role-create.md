@@ -8,7 +8,7 @@ Permiso `role-create` en la API.
 
 ## Routes protected
 
-- `POST /role → RoleController@create`
+- `POST /role -> RoleController@create`
 
 ## Enforced by
 

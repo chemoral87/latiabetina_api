@@ -8,7 +8,7 @@ Permiso `organization-delete` en la API.
 
 ## Routes protected
 
-- `DELETE /organization/{id} → OrganizationController@delete`
+- `DELETE /organization/{id} -> OrganizationController@delete`
 
 ## Enforced by
 
