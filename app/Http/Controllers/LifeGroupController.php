@@ -36,7 +36,7 @@ class LifeGroupController extends Controller
             $query->where('status', $request->get('status'));
         }
 
-        // If the user only has life-group-insert (as a leader), filter to their groups
+        // If the user only has life-group-create (as a leader), filter to their groups
         $user = $this->user;
         if ($user && !$user->hasAnyPermission(['life-group-index'])) {
             $leaderGroupIds = \DB::table('life_group_leaders')
