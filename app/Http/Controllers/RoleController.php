@@ -66,7 +66,7 @@ class RoleController extends Controller {
     $roles = Role::select("name", "id")
       ->whereNotIn("id", $ids)
       ->where("name", "like", "%" . $filter . "%")
-      ->orderBy("name")->paginate(4);
+      ->orderBy("name")->paginate(6);
     return $roles->items();
   }
 

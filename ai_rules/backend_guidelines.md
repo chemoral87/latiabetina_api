@@ -461,3 +461,33 @@ return new class extends Migration {
 - Methods: `*`
 - Origins: localhost, LAN IPs, `*.latiabetina.com`, `*.avivamientomonterrey.com`
 - Credentials: true
+
+---
+
+## New Resource Module Checklist (5 rules)
+
+Apply these when wiring any new resource (e.g., the Expense module): routes, permissions, controllers, and docs must ship together.
+
+1. **Gate every route with `permission_org:{resource}-{action}`**
+   - All CRUD endpoints live inside the `jwt.verify` group: reads use `-index`, writes use `-create` / `-update` / `-delete`
+   - No ungated routes inside the group; keep truly public endpoints (`/public`, registration, OAuth) in the public `api` group
+   - Use one permission family per module (e.g., `expense-ticket-*` covers tickets, expenses, categories, concepts)
+   - Custom actions map to a sensible permission (`/kds` → `pos-kds`, `/reorder` → `product-update`, `/copy` → `church-event-create`)
+
+2. **Seed every permission referenced by routes**
+   - Every `permission_org:` string must exist in `InitSeeder`'s permissions array **and** be granted to the `super` role
+   - The seeder must be fully idempotent: `firstOrCreate` for roles and demo users too (not just permissions), so `php artisan db:seed --class=InitSeeder` is safe to re-run on existing DBs
+
+3. **Scope by org even when the anchor is indirect**
+   - If the entity links to an org through another table (e.g., ticket → `store_id` → `store.org_id`), scope reads with `getOrgsByPermission(...)` + `whereHas('store')` (nested `whereHas('ticket.store')` for grandchildren); empty org list → `whereRaw('1 = 0')`
+   - In `create`/`update`, re-validate the target org and return 403 when it's not allowed (`abort(403, '... not allowed')`)
+   - Make the org-anchoring FK required (e.g., `ticket_id` required) so every row is scoped — never create rows that are invisible to the org scope
+   - Global reference data with no `org_id` column (categories, concepts) stays unscoped — document that choice
+
+4. **Never wire routes to empty controller stubs**
+   - Implement full CRUD when registering routes: `index` (DataSetResource + `queryServerSide()` + filter), `show` (`abort(405)` when missing), `create`/`update` (inline validation matching the migration + `created_by`/`updated_by` from `JWTAuth::user()->id`), `delete`
+   - Add the model relations the queries rely on (`store()`, `concept()`, pivot `sync()` / `detach()`) — don't eager-load relations that can't be populated
+
+5. **Keep `ai_permission_mapping/` in sync**
+   - One `<permission>.md` per permission: `Files` → `Routes protected` (URI + Controller@method) → `Enforced by` (middleware vs. org scope)
+   - Update or regenerate the mapping whenever routes or permissions change (e.g., after adding gates or new endpoints)
