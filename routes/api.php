@@ -107,12 +107,12 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('auditorium')->controller(AuditoriumController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/filter', 'filter');
-    Route::get('/{id}', 'show');
-    Route::post('/', 'create');
-    Route::put('/{id}', 'update');
-    Route::delete('/{id}', 'delete');
+    Route::get('/', 'index')->middleware('permission_org:auditorium-index');
+    Route::get('/filter', 'filter')->middleware('permission_org:auditorium-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:auditorium-index');
+    Route::post('/', 'create')->middleware('permission_org:auditorium-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:auditorium-update');
+    Route::delete('/{id}', 'delete')->middleware('permission_org:auditorium-delete');
   });
 
   Route::prefix('auditorium-event')->controller(AuditoriumEventController::class)->group(function () {
@@ -124,22 +124,22 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('auditorium-event-seat')->controller(AuditoriumEventSeatController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::post('/', 'store');
+    Route::get('/', 'index')->middleware('permission_org:auditorium-event-index');
+    Route::post('/', 'store')->middleware('permission_org:auditorium-event-index');
   });
 
   Route::prefix('auditorium-event-seat-log')->controller(AuditoriumEventSeatLogController::class)->group(function () {
-    Route::get('/', 'index');
+    Route::get('/', 'index')->middleware('permission_org:auditorium-event-index');
   });
 
   Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/calendar', 'calendar');
-    Route::get('/{churchEvent}', 'show');
-    Route::post('/', 'store');
-    Route::post('/{churchEvent}/copy', 'copy');
-    Route::put('/{churchEvent}', 'update');
-    Route::delete('/{churchEvent}', 'destroy');
+    Route::get('/', 'index')->middleware('permission_org:church-event-index');
+    Route::get('/calendar', 'calendar')->middleware('permission_org:church-event-index');
+    Route::get('/{churchEvent}', 'show')->middleware('permission_org:church-event-index');
+    Route::post('/', 'store')->middleware('permission_org:church-event-create');
+    Route::post('/{churchEvent}/copy', 'copy')->middleware('permission_org:church-event-create');
+    Route::put('/{churchEvent}', 'update')->middleware('permission_org:church-event-update');
+    Route::delete('/{churchEvent}', 'destroy')->middleware('permission_org:church-event-delete');
   });
 
   Route::prefix('permission')->controller(PermissionController::class)->group(function () {
@@ -152,25 +152,25 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('product')->controller(ProductController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/pos', 'pos');
-    Route::post('/reorder', 'reorder');
-    Route::get('/{product}', 'show');
-    Route::post('/', 'store');
-    Route::put('/{product}', 'update');
-    Route::delete('/{product}', 'destroy');
+    Route::get('/', 'index')->middleware('permission_org:product-index');
+    Route::get('/pos', 'pos')->middleware('permission_org:product-index');
+    Route::post('/reorder', 'reorder')->middleware('permission_org:product-update');
+    Route::get('/{product}', 'show')->middleware('permission_org:product-index');
+    Route::post('/', 'store')->middleware('permission_org:product-create');
+    Route::put('/{product}', 'update')->middleware('permission_org:product-update');
+    Route::delete('/{product}', 'destroy')->middleware('permission_org:product-delete');
   });
 
   Route::prefix('sale')->controller(SaleController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/daily', 'daily');
-    Route::get('/kds', 'kds');
-    Route::get('/{sale}', 'show');
-    Route::post('/', 'store');
-    Route::patch('/{sale}/complete', 'complete');
-    Route::patch('/{sale}/item/{saleItem}', 'updateItem');
-    Route::put('/{sale}', 'update');
-    Route::delete('/{sale}', 'destroy');
+    Route::get('/', 'index')->middleware('permission_org:sale-index');
+    Route::get('/daily', 'daily')->middleware('permission_org:sale-index');
+    Route::get('/kds', 'kds')->middleware('permission_org:pos-kds');
+    Route::get('/{sale}', 'show')->middleware('permission_org:sale-index');
+    Route::post('/', 'store')->middleware('permission_org:sale-create');
+    Route::patch('/{sale}/complete', 'complete')->middleware('permission_org:sale-update');
+    Route::patch('/{sale}/item/{saleItem}', 'updateItem')->middleware('permission_org:sale-update');
+    Route::put('/{sale}', 'update')->middleware('permission_org:sale-update');
+    Route::delete('/{sale}', 'destroy')->middleware('permission_org:sale-delete');
   });
 
   Route::prefix('organization')->controller(OrganizationController::class)->group(function () {
@@ -192,19 +192,19 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('store')->controller(StoreController::class)->group(function () {
-    Route::get("/", 'index');
-    Route::get("/{id}", 'show');
-    Route::post("/", 'create');
-    Route::put("/{id}", 'update');
-    Route::delete("/{id}", 'delete');
+    Route::get("/", 'index')->middleware('permission_org:store-index');
+    Route::get("/{id}", 'show')->middleware('permission_org:store-index');
+    Route::post("/", 'create')->middleware('permission_org:store-create');
+    Route::put("/{id}", 'update')->middleware('permission_org:store-update');
+    Route::delete("/{id}", 'delete')->middleware('permission_org:store-delete');
   });
 
   Route::prefix('conso-sheet')->controller(ConsoSheetController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/{id}', 'show');
-    Route::post('/', 'create');
-    Route::put('/{id}', 'update');
-    Route::delete('/{id}', 'delete');
+    Route::get('/', 'index')->middleware('permission_org:conso-sheet-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:conso-sheet-index');
+    Route::post('/', 'create')->middleware('permission_org:conso-sheet-create');
+    Route::put('/{id}', 'update')->middleware('permission_org:conso-sheet-update');
+    Route::delete('/{id}', 'delete')->middleware('permission_org:conso-sheet-delete');
   });
 
   Route::prefix('church-member')->controller(ChurchMemberController::class)->group(function () {
@@ -227,10 +227,10 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('testimony')->controller(TestimonyController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get("/{id}", 'show');
-    Route::put('/{id}/status', 'updateStatus');
-    Route::put("/{id}", "update");
+    Route::get('/', 'index')->middleware('permission_org:testimony-index');
+    Route::get("/{id}", 'show')->middleware('permission_org:testimony-index');
+    Route::put('/{id}/status', 'updateStatus')->middleware('permission_org:testimony-update');
+    Route::put("/{id}", "update")->middleware('permission_org:testimony-update');
   });
 
   Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
