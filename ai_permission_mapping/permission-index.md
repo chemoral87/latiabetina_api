@@ -9,7 +9,6 @@ Permiso `permission-index` en la API.
 ## Routes protected
 
 - `GET /permission -> PermissionController@index`
-- `GET /permission/filter -> PermissionController@filter`
 - `GET /permission/{id}/distribution -> PermissionController@distribution`
 
 ## Enforced by

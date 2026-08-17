@@ -9,10 +9,7 @@ Permiso `auditorium-event-index` en la API.
 ## Routes protected
 
 - `GET /auditorium-event -> AuditoriumEventController@index`
-- `GET /auditorium-event-seat -> AuditoriumEventSeatController@index`
-- `GET /auditorium-event-seat-log -> AuditoriumEventSeatLogController@index`
-- `GET /auditorium-event/{id} -> AuditoriumEventController@show`
-- `POST /auditorium-event-seat -> AuditoriumEventSeatController@store`
+- `GET /auditorium-event/{id} -> AuditoriumEventController@show` (compartido con `auditorium-event-mark`)
 
 ## Enforced by
 

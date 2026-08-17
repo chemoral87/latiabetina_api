@@ -35,6 +35,9 @@ class InitSeeder extends Seeder {
       'church-event-index', 'church-event-create', 'church-event-update', 'church-event-delete',
       'conso-sheet-index', 'conso-sheet-create', 'conso-sheet-update', 'conso-sheet-delete',
       'ukelele-course',
+      'auditorium-event-mark',
+      'auditorium-filter',
+      'user-filter', 'role-filter', 'permission-filter', 'organization-filter',
       'alpha-special', 'alpha-view', 'beta-manage', 'beta-export',
     ];
     foreach ($permissions as $perm) {
@@ -110,6 +113,9 @@ class InitSeeder extends Seeder {
       'testimony-index', 'testimony-create', 'testimony-update', 'testimony-delete',
       'church-event-index', 'church-event-create', 'church-event-update', 'church-event-delete',
       'conso-sheet-index', 'conso-sheet-create', 'conso-sheet-update', 'conso-sheet-delete',
+      'auditorium-event-mark',
+      'auditorium-filter',
+      'user-filter', 'role-filter', 'permission-filter', 'organization-filter',
       'ukelele-course',
     ]);
 

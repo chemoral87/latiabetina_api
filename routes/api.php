@@ -89,7 +89,7 @@ Route::post('auth/google/validate', [GoogleAuthController::class, 'validateToken
 Route::group(['middleware' => ['jwt.verify']], function () {
   Route::prefix('user')->controller(UserController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:user-index');
-    Route::get('/filter', 'filter')->middleware('permission_org:user-index');
+    Route::get('/filter', 'filter')->middleware('permission_org:user-filter');
     Route::get('/{id}', 'show')->middleware('permission_org:user-index');
     Route::post('/', 'create')->middleware('permission_org:user-create');
     Route::put('/{id}', 'update')->middleware('permission_org:user-update');
@@ -100,7 +100,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('role')->controller(RoleController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:role-index');
-    Route::get('/filter', 'filter')->middleware('permission_org:role-index');
+    Route::get('/filter', 'filter')->middleware('permission_org:role-filter');
     Route::get('/{id}/distribution', 'distribution')->middleware('permission_org:role-index');
     Route::get('/{id}', 'show')->middleware('permission_org:role-index');
     Route::post('/', 'create')->middleware('permission_org:role-create');
@@ -112,7 +112,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('auditorium')->controller(AuditoriumController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:auditorium-index');
-    Route::get('/filter', 'filter')->middleware('permission_org:auditorium-index');
+    Route::get('/filter', 'filter')->middleware('permission_org:auditorium-filter');
     Route::get('/{id}', 'show')->middleware('permission_org:auditorium-index');
     Route::post('/', 'create')->middleware('permission_org:auditorium-create');
     Route::put('/{id}', 'update')->middleware('permission_org:auditorium-update');
@@ -121,19 +121,19 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('auditorium-event')->controller(AuditoriumEventController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:auditorium-event-index');
-    Route::get('/{id}', 'show')->middleware('permission_org:auditorium-event-index');
+    Route::get('/{id}', 'show')->middleware('permission_org:auditorium-event-index,auditorium-event-mark');
     Route::post('/', 'store')->middleware('permission_org:auditorium-event-create');
     Route::put('/{id}', 'update')->middleware('permission_org:auditorium-event-update');
     Route::delete('/{id}', 'destroy')->middleware('permission_org:auditorium-event-delete');
   });
 
   Route::prefix('auditorium-event-seat')->controller(AuditoriumEventSeatController::class)->group(function () {
-    Route::get('/', 'index')->middleware('permission_org:auditorium-event-index');
-    Route::post('/', 'store')->middleware('permission_org:auditorium-event-index');
+    Route::get('/', 'index')->middleware('permission_org:auditorium-event-mark');
+    Route::post('/', 'store')->middleware('permission_org:auditorium-event-mark');
   });
 
   Route::prefix('auditorium-event-seat-log')->controller(AuditoriumEventSeatLogController::class)->group(function () {
-    Route::get('/', 'index')->middleware('permission_org:auditorium-event-index');
+    Route::get('/', 'index')->middleware('permission_org:auditorium-event-mark');
   });
 
   Route::prefix('church-event')->controller(ChurchEventController::class)->group(function () {
@@ -148,7 +148,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('permission')->controller(PermissionController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:permission-index');
-    Route::get('/filter', 'filter')->middleware('permission_org:permission-index');
+    Route::get('/filter', 'filter')->middleware('permission_org:permission-filter');
     Route::get('/{id}/distribution', 'distribution')->middleware('permission_org:permission-index');
     Route::post('/', 'create')->middleware('permission_org:permission-create');
     Route::put('/{id}', 'update')->middleware('permission_org:permission-update');
@@ -179,7 +179,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('organization')->controller(OrganizationController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:organization-index');
-    Route::get('/filter', 'filter')->middleware('permission_org:organization-index');
+    Route::get('/filter', 'filter')->middleware('permission_org:organization-filter');
     Route::get('/{id}', 'show')->middleware('permission_org:organization-index');
     Route::post('/', 'create')->middleware('permission_org:organization-create');
     Route::put('/{id}', 'update')->middleware('permission_org:organization-update');

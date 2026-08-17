@@ -6,14 +6,18 @@ use Closure;
 
 class CheckOrgPermission
 {
-  public function handle($request, Closure $next, $permission)
+  public function handle($request, Closure $next, ...$permissions)
   {
     $user = auth('api')->user();
     $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
-    if (!$user || !isset($permissions_orgs[$permission])) {
-      return response()->json(['error' => "No tienes permiso para realizar esta acción. Se requiere el permiso: {$permission}"], 403);
+    $required = count($permissions) > 0 ? $permissions : [''];
+    foreach ($required as $perm) {
+      $perm = trim($perm);
+      if ($perm && isset($permissions_orgs[$perm])) {
+        return $next($request);
+      }
     }
-
-    return $next($request);
+    $perm = implode(', ', $required);
+    return response()->json(['error' => "No tienes permiso para realizar esta acción. Se requiere el permiso: {$perm}"], 403);
   }
 }

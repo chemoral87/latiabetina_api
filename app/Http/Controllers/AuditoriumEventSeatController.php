@@ -66,7 +66,7 @@ class AuditoriumEventSeatController extends Controller {
 
     if ($today->format('Y-m-d') > $eventDate->format('Y-m-d')) {
       return response()->json([
-        'warning' => 'Ya nose puede modificar evento',
+        'warning' => 'Ya no se puede modificar evento',
       ]);
     }
 

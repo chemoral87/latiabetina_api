@@ -11,7 +11,6 @@ Permiso `auditorium-index` en la API.
 ## Routes protected
 
 - `GET /auditorium -> AuditoriumController@index`
-- `GET /auditorium/filter -> AuditoriumController@filter`
 - `GET /auditorium/{id} -> AuditoriumController@show`
 
 ## Enforced by
