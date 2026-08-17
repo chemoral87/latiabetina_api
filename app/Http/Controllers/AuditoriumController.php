@@ -56,11 +56,15 @@ class AuditoriumController extends Controller {
       ->whereNotIn("auditoriums.id", $ids)
       ->where("auditoriums.name", "like", "%" . $filter . "%")
       ->orderBy("auditoriums.name");
-    $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-index', 'auditoriums.org_id');
+    $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-filter', 'auditoriums.org_id');
     if ($request->has('org_id') && !empty($request->get('org_id'))) {
       $query->where('auditoriums.org_id', $request->get('org_id'));
     }
-    return $query->paginate(4)->items();
+    $itemsPerPage = (int) $request->get('itemsPerPage', 15);
+    if ($itemsPerPage < 1) {
+      $itemsPerPage = 15;
+    }
+    return $query->paginate($itemsPerPage)->items();
   }
 
   public function show(Request $request, $id) {

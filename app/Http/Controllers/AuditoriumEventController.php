@@ -8,6 +8,7 @@ use App\Models\Auditorium;
 use App\Models\AuditoriumEvent;
 use App\Models\Organization;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditoriumEventController extends Controller {
@@ -25,7 +26,7 @@ class AuditoriumEventController extends Controller {
       ->select('auditorium_events.id', 'auditorium_events.event_date', 'auditorium_events.time', 'auditorium_events.auditorium_id', 'auditorium_events.org_id',
         'auditoriums.name as auditorium_name', 'organizations.name as org_name');
 
-    $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-index', 'auditorium_events.org_id');
+    $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-event-index', 'auditorium_events.org_id');
 
     $itemsPerPage = (int) $request->get('itemsPerPage', 15);
     if ($itemsPerPage < 1 || $itemsPerPage > 15) {
@@ -108,7 +109,13 @@ class AuditoriumEventController extends Controller {
     $auditorium = Auditorium::findOrFail($auditorium_id);
 
     $data = $request->validate([
-      'event_date' => 'required|date',
+      'event_date' => [
+        'required',
+        'date',
+        Rule::unique('auditorium_events', 'event_date')
+          ->where('time', $request->input('time'))
+          ->where('org_id', $request->input('org_id')),
+      ],
       'time' => 'required|date_format:H:i|in:09:45,12:00,20:00',
 
       'auditorium_id' => 'required|exists:auditoriums,id',
@@ -131,7 +138,14 @@ class AuditoriumEventController extends Controller {
   public function update(Request $request, $id) {
     $event = AuditoriumEvent::findOrFail($id);
     $data = $request->validate([
-      'event_date' => 'sometimes|date',
+      'event_date' => [
+        'sometimes',
+        'date',
+        Rule::unique('auditorium_events', 'event_date')
+          ->where('time', $request->input('time', $event->time))
+          ->where('org_id', $request->input('org_id', $event->org_id))
+          ->ignore($event->id),
+      ],
       'time' => 'sometimes|date_format:H:i|in:09:45,12:00,20:00',
 
       'auditorium_id' => 'sometimes|exists:auditoriums,id',
