@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('conso_sheets', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('org_id')->nullable();
+            $table->foreign('org_id')->references('id')->on('organizations')->nullOnDelete();
             $table->string('folio_number');
             $table->date('date');
             $table->string('how_did_you_hear')->nullable();

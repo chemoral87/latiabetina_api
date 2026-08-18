@@ -50,16 +50,19 @@ class UserController extends Controller {
       'email' => 'required|unique:users,email',
     ]);
 
-    $random_password = strtoupper(Str::random(5));
-    $hashed_random_password = Hash::make($random_password);
-    // add password
+    // En entornos que no son producción el password es 'admin' para facilitar las pruebas.
+    if (app()->environment('production')) {
+      $random_password = strtoupper(Str::random(5));
+      $hashed_random_password = Hash::make($random_password);
 
-    //User::create($req + ['password' => Hash::make('admin')]);
+      // notify password
+      Notification::route("mail", $request->get("email"))
+        ->notify(new UserPasswordNotification($req + ['password' => $random_password, 'cellphone' => $request->get("cellphone")]));
+    } else {
+      $hashed_random_password = Hash::make('admin');
+    }
+
     $user = User::create($req + ['password' => $hashed_random_password]);
-
-    // notify password
-    Notification::route("mail", $request->get("email"))
-      ->notify(new UserPasswordNotification($req + ['password' => $random_password, 'cellphone' => $request->get("cellphone")]));
 
     $user->load('roles', 'permissions');
 

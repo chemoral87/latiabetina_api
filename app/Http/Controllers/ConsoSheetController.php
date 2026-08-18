@@ -48,6 +48,35 @@ class ConsoSheetController extends Controller
         return response()->json($query->paginate($itemsPerPage));
     }
 
+    public function consolidators(Request $request)
+    {
+        $orgId = $request->integer('org_id');
+        $queryText = trim((string) $request->get('queryText', ''));
+        $ids = $request->get('ids', []);
+
+        $users = \App\Models\User::query()
+            ->select('id', 'name', 'last_name', 'second_last_name', 'email')
+            ->whereNotIn('id', $ids)
+            ->whereHas('profiles', function ($query) use ($orgId) {
+                $query->where('org_id', $orgId)->where(function ($q) {
+                    $q->whereHas('roles.permissions', function ($p) {
+                        $p->where('name', 'conso-sheet-index');
+                    })->orWhereHas('permissions', function ($p) {
+                        $p->where('name', 'conso-sheet-index');
+                    });
+                });
+            });
+
+        if ($queryText !== '') {
+            $users->where(function ($q) use ($queryText) {
+                $q->where(\Illuminate\Support\Facades\DB::raw("CONCAT_WS(' ', name, last_name, second_last_name)"), 'like', '%' . $queryText . '%')
+                    ->orWhere('email', 'like', '%' . $queryText . '%');
+            });
+        }
+
+        return response()->json($users->orderBy('name')->paginate(7)->items());
+    }
+
     public function show($id)
     {
         $sheet = ConsoSheet::with(['creator', 'organization'])->findOrFail($id);
@@ -67,10 +96,14 @@ class ConsoSheetController extends Controller
             'consolidator_id' => 'nullable|exists:users,id',
         ]);
 
+        if ($request->has('consolidator_id') && !$this->user->hasAnyPermission(['conso-sheet-consolidator-select'])) {
+            return response()->json(['message' => 'You do not have permission to assign a consolidator'], 403);
+        }
+
         $data = $request->all();
         $data['created_by'] = $this->user->id;
 
-        $sheet = ConsoSheet::create($data);
+        $sheet = ConsoSheet::with(['creator', 'organization'])->findOrFail(ConsoSheet::create($data)->id);
         return response()->json($sheet, 201);
     }
 
@@ -78,6 +111,10 @@ class ConsoSheetController extends Controller
     {
         $sheet = ConsoSheet::findOrFail($id);
         
+        if ($request->has('consolidator_id') && !$this->user->hasAnyPermission(['conso-sheet-consolidator-select'])) {
+            return response()->json(['message' => 'You do not have permission to assign a consolidator'], 403);
+        }
+
         $request->validate([
             'org_id'       => 'sometimes|exists:organizations,id',
             'folio_number' => 'required|string|unique:conso_sheets,folio_number,' . $id,
@@ -90,7 +127,7 @@ class ConsoSheetController extends Controller
         ]);
 
         $sheet->update($request->all());
-        return response()->json($sheet);
+        return response()->json($sheet->load(['creator', 'organization']));
     }
 
     public function delete($id)

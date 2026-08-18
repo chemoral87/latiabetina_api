@@ -237,6 +237,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
   Route::prefix('conso-sheet')->controller(ConsoSheetController::class)->group(function () {
     Route::get('/', 'index')->middleware('permission_org:conso-sheet-index');
+    Route::get('/consolidators', 'consolidators')->middleware('permission_org:conso-sheet-index');
     Route::get('/{id}', 'show')->middleware('permission_org:conso-sheet-index');
     Route::post('/', 'create')->middleware('permission_org:conso-sheet-create');
     Route::put('/{id}', 'update')->middleware('permission_org:conso-sheet-update');
