@@ -36,7 +36,8 @@ class ChurchMemberController extends Controller
     public function create(Request $request)
     {
         $request->validate([
-            'conso_sheet_id' => 'required|exists:conso_sheets,id',
+            'org_id'         => 'required|exists:organizations,id',
+            'conso_sheet_id' => 'sometimes|nullable|exists:conso_sheets,id',
             'name'           => 'required|string|max:255',
             'last_name'      => 'required|string|max:255',
         ]);

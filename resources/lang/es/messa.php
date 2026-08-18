@@ -98,6 +98,10 @@ return [
   'testimony_approved' => 'Testimonio aprobado',
   'testimony_rejected' => 'Testimonio rechazado',
 
+  'song_create' => 'Canción creada',
+  'song_update' => 'Canción guardada',
+  'song_delete' => 'Canción eliminada',
+
   'product_create' => 'Producto :name creado',
   'product_update' => 'Producto :name guardado',
   'product_delete' => 'Producto eliminado',

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('conso_sheets', function (Blueprint $table) {
-            $table->unsignedBigInteger('created_by')->nullable()->after('consolidator_id');
+            $table->unsignedBigInteger('created_by')->nullable()->after('org_id');
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
         });
     }

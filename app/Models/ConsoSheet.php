@@ -17,7 +17,6 @@ class ConsoSheet extends Model
         'first_time_christian_church',
         'comments',
         'special_request',
-        'consolidator_id',
         'created_by',
     ];
 
@@ -28,11 +27,6 @@ class ConsoSheet extends Model
     public function churchMembers()
     {
         return $this->hasMany(ChurchMember::class);
-    }
-
-    public function consolidator()
-    {
-        return $this->belongsTo(\App\Models\User::class, 'consolidator_id');
     }
 
     public function creator()

@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SongController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TestimonyController;
 use App\Http\Controllers\UserController;
@@ -268,6 +269,14 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::get("/{id}", 'show')->middleware('permission_org:testimony-index');
     Route::put('/{id}/status', 'updateStatus')->middleware('permission_org:testimony-update');
     Route::put("/{id}", "update")->middleware('permission_org:testimony-update');
+  });
+
+  Route::prefix('song')->controller(SongController::class)->group(function () {
+    Route::get('/', 'index')->middleware('permission_org:song-index');
+    Route::get('/{song}', 'show')->middleware('permission_org:song-index');
+    Route::post('/', 'store')->middleware('permission_org:song-create');
+    Route::put('/{song}', 'update')->middleware('permission_org:song-update');
+    Route::delete('/{song}', 'destroy')->middleware('permission_org:song-delete');
   });
 
   Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {

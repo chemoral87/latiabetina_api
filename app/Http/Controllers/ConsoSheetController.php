@@ -12,7 +12,7 @@ class ConsoSheetController extends Controller
 {
     use AppliesOrgPermissionScope;
 
-      protected $user;
+      protected $user; 
 
   public function __construct() {
     $this->user = JWTAuth::user();
@@ -21,6 +21,13 @@ class ConsoSheetController extends Controller
     {
         $query = ConsoSheet::with(['creator', 'organization']);
         $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+
+        $query->where(function ($q) {
+            $q->where('created_by', $this->user->id)
+                ->orWhereHas('churchMembers.consolidators', function ($q) {
+                    $q->where('users.id', $this->user->id);
+                });
+        });
 
         if ($request->has('filter') && !empty($request->filter)) {
             $query->where('folio_number', 'like', '%' . $request->filter . '%');
@@ -93,12 +100,7 @@ class ConsoSheetController extends Controller
             'first_time_christian_church' => 'nullable|boolean',
             'comments'       => 'nullable|string',
             'special_request' => 'nullable|string',
-            'consolidator_id' => 'nullable|exists:users,id',
         ]);
-
-        if ($request->has('consolidator_id') && !$this->user->hasAnyPermission(['conso-sheet-consolidator-select'])) {
-            return response()->json(['message' => 'You do not have permission to assign a consolidator'], 403);
-        }
 
         $data = $request->all();
         $data['created_by'] = $this->user->id;
@@ -110,10 +112,6 @@ class ConsoSheetController extends Controller
     public function update(Request $request, $id)
     {
         $sheet = ConsoSheet::findOrFail($id);
-        
-        if ($request->has('consolidator_id') && !$this->user->hasAnyPermission(['conso-sheet-consolidator-select'])) {
-            return response()->json(['message' => 'You do not have permission to assign a consolidator'], 403);
-        }
 
         $request->validate([
             'org_id'       => 'sometimes|exists:organizations,id',
@@ -123,7 +121,6 @@ class ConsoSheetController extends Controller
             'first_time_christian_church' => 'nullable|boolean',
             'comments'       => 'nullable|string',
             'special_request' => 'nullable|string',
-            'consolidator_id' => 'nullable|exists:users,id',
         ]);
 
         $sheet->update($request->all());

@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('church_members', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('conso_sheet_id')->constrained('conso_sheets')->cascadeOnDelete();
+            // org_id es obligatorio, pero conso_sheet es opcional
+            $table->unsignedBigInteger('org_id');
+            $table->foreign('org_id')->references('id')->on('organizations')->cascadeOnDelete();
+            $table->foreignId('conso_sheet_id')->nullable()->constrained('conso_sheets')->cascadeOnDelete();
             $table->string('name');
             $table->string('last_name')->nullable();
             $table->string('second_last_name')->nullable();

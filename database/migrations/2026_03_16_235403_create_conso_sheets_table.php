@@ -21,8 +21,6 @@ return new class extends Migration
             $table->boolean('first_time_christian_church')->default(false);
             $table->text('comments')->nullable();
             $table->text('special_request')->nullable();
-            $table->unsignedBigInteger('consolidator_id')->nullable();
-            $table->foreign('consolidator_id')->references('id')->on('users')->nullOnDelete();
             $table->timestamps();
         });
     }

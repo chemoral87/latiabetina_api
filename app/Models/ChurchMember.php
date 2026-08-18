@@ -10,6 +10,7 @@ class ChurchMember extends Model
     use HasFactory;
 
     protected $fillable = [
+        'org_id',
         'conso_sheet_id',
         'name',
         'last_name',
@@ -21,8 +22,18 @@ class ChurchMember extends Model
         'marriage_status',
     ];
 
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
     public function consoSheet()
     {
         return $this->belongsTo(ConsoSheet::class);
+    }
+
+    public function consolidators()
+    {
+        return $this->belongsToMany(User::class, 'church_member_consolidator', 'church_member_id', 'consolidator_id')->withTimestamps();
     }
 }
