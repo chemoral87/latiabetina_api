@@ -1,24 +1,20 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Church;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ChurchMemberTrackingLog extends Model
+class ChurchMemberMedal extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'church_member_id',
-        'contact_date',
-        'medium',
+        'medal',
         'description',
         'created_by',
-    ];
-
-    protected $casts = [
-        'contact_date' => 'date:Y-m-d',
     ];
 
     public function churchMember()

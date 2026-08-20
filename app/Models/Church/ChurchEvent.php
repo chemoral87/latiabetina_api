@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Church;
 
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class ChurchEvent extends Model {

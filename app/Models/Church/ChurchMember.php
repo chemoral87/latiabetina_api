@@ -1,13 +1,18 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Church;
 
+use App\Models\ConsoSheet;
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class ChurchMember extends Model
+class ChurchMember extends Model implements AuditableContract
 {
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $fillable = [
         'org_id',

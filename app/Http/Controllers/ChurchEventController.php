@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
-use App\Models\ChurchEvent;
+use App\Models\Church\ChurchEvent;
 use App\Services\ChurchEventCopyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

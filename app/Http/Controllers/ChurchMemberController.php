@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
-use App\Models\ChurchMember;
-use App\Models\ChurchMemberTrackingLog;
+use App\Models\Church\ChurchMember;
+use App\Models\Church\ChurchMemberTrackingLog;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -106,13 +106,30 @@ class ChurchMemberController extends Controller
     {
         $member = $this->findMemberInScope($id);
 
-        $logs = $member->trackingLogs()
-            ->with('creator')
-            ->orderByDesc('contact_date')
-            ->orderByDesc('id')
-            ->get();
+        $query = $member->trackingLogs()->with('creator')->orderByDesc('contact_date')->orderByDesc('id');
 
-        return response()->json($logs);
+        $page = $request->get('page', 1);
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        $sortBy = $request->get('sortBy', ['contact_date']);
+        $sortDesc = $request->get('sortDesc', [true]);
+
+        if (!empty($sortBy) && is_array($sortBy)) {
+            foreach ($sortBy as $index => $field) {
+                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $query->orderBy($field, $dir);
+            }
+        }
+
+        $total = $query->count();
+        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $logs->items(),
+            'total' => $total,
+            'current_page' => $logs->currentPage(),
+            'last_page' => $logs->lastPage(),
+            'per_page' => $logs->perPage(),
+        ]);
     }
 
     public function storeTrackingLog(Request $request, $id)
@@ -120,16 +137,18 @@ class ChurchMemberController extends Controller
         $member = $this->findMemberInScope($id);
 
         $request->validate([
-            'contact_date' => 'required|date',
-            'medium'       => 'required|in:whatsapp,llamada,presencial,sms',
-            'description'  => 'nullable|string|max:2000',
+            'contact_date'   => 'required|date',
+            'medium'         => 'required|in:whatsapp,llamada,presencial,sms',
+            'classification' => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description'    => 'nullable|string|max:2000',
         ]);
 
         $log = $member->trackingLogs()->create([
-            'contact_date' => $request->contact_date,
-            'medium'       => $request->medium,
-            'description'  => $request->description,
-            'created_by'   => $this->user->id,
+            'contact_date'   => $request->contact_date,
+            'medium'         => $request->medium,
+            'classification' => $request->classification,
+            'description'    => $request->description,
+            'created_by'     => $this->user->id,
         ]);
 
         return response()->json($log->load('creator'), 201);
