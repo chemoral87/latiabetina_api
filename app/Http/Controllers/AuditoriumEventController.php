@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Http\Resources\DataSetResource;
-use App\Models\Auditorium;
-use App\Models\AuditoriumEvent;
+use App\Models\Auditorium\Auditorium;
+use App\Models\Auditorium\AuditoriumEvent;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -89,7 +89,7 @@ class AuditoriumEventController extends Controller {
       ->firstOrFail();
 
     $seats = AuditoriumEvent::find($id)
-      ->hasMany(\App\Models\AuditoriumEventSeat::class, 'auditorium_event_id')
+      ->hasMany(\App\Models\Auditorium\AuditoriumEventSeat::class, 'auditorium_event_id')
       ->select("seat_id", "status")
       ->whereNotNull('status')
       ->get();

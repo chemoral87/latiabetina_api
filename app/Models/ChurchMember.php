@@ -20,6 +20,7 @@ class ChurchMember extends Model
         'cellphone',
         'address',
         'marriage_status',
+        'status',
     ];
 
     public function organization()
@@ -35,5 +36,20 @@ class ChurchMember extends Model
     public function consolidators()
     {
         return $this->belongsToMany(User::class, 'church_member_consolidator', 'church_member_id', 'consolidator_id')->withTimestamps();
+    }
+
+    public function trackingLogs()
+    {
+        return $this->hasMany(ChurchMemberTrackingLog::class);
+    }
+
+    public function statusLogs()
+    {
+        return $this->hasMany(ChurchMemberStatusLog::class);
+    }
+
+    public function medals()
+    {
+        return $this->hasMany(ChurchMemberMedal::class);
     }
 }

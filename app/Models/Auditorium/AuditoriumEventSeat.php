@@ -1,21 +1,16 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Auditorium;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
-class AuditoriumEventSeatLog extends Model {
-  protected $table = 'auditorium_event_seats_log';
-
+class AuditoriumEventSeat extends Model {
   protected $fillable = [
     'auditorium_event_id',
-    'seat_ids',
+    'seat_id',
     'status',
     'created_by',
-  ];
-
-  protected $casts = [
-    'seat_ids' => 'array',
   ];
 
   public function auditoriumEvent() {

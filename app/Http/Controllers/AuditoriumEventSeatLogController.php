@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\AuditoriumEventSeatLog;
+use App\Models\Auditorium\AuditoriumEventSeatLog;
 use App\Models\User;
 
 class AuditoriumEventSeatLogController extends Controller

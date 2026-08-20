@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Events\SeatUpdated;
-use App\Models\AuditoriumEvent;
-use App\Models\AuditoriumEventSeat;
-use App\Models\AuditoriumEventSeatLog;
+use App\Models\Auditorium\AuditoriumEvent;
+use App\Models\Auditorium\AuditoriumEventSeat;
+use App\Models\Auditorium\AuditoriumEventSeatLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
