@@ -25,8 +25,24 @@ class ChurchMember extends Model implements AuditableContract
         'cellphone',
         'address',
         'marriage_status',
+        'url_image',
         'status',
     ];
+
+    protected $hidden = ['url_image'];
+
+    protected $appends = ['url_image_s3'];
+
+    protected function casts(): array
+    {
+        return [
+        ];
+    }
+
+    public function getUrlImageS3Attribute() {
+        $path = is_string($this->url_image) ? $this->url_image : null;
+        return temporaryUrlS3($path);
+    }
 
     public function organization()
     {

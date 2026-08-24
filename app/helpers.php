@@ -107,9 +107,9 @@ function awsUrlS3($path, $random = true) {
 
 function temporaryUrlS3($path) {
 
-  if ($path) {
+  if ($path && is_string($path)) {
 
-    $cacheKey = 'temp-url-' . $path;
+    $cacheKey = 'temp-url-v2-' . $path;
     $cacheTtl = 60 * 24 * 7; // 7 days in minutes
     // Check if the temporary URL is already cached
     if (Cache::has($cacheKey)) {
@@ -119,7 +119,7 @@ function temporaryUrlS3($path) {
     Cache::put($cacheKey, $temporaryUrl, $cacheTtl);
     return $temporaryUrl;
   }
-  return "https://source.unsplash.com/96x96/daily";
+  return "";
 
 }
 

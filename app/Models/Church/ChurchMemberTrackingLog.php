@@ -12,7 +12,7 @@ class ChurchMemberTrackingLog extends Model
 
     protected $fillable = [
         'church_member_id',
-        'contact_date',
+        'contact_datetime',
         'medium',
         'classification',
         'description',
@@ -20,7 +20,7 @@ class ChurchMemberTrackingLog extends Model
     ];
 
     protected $casts = [
-        'contact_date' => 'date:Y-m-d',
+        'contact_datetime' => 'datetime',
     ];
 
     public function churchMember()

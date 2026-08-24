@@ -253,6 +253,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::delete('/{id}', 'delete');
     Route::get('/{id}/tracking-logs', 'trackingLogs')->middleware('permission_org:conso-sheet-index');
     Route::post('/{id}/tracking-logs', 'storeTrackingLog')->middleware('permission_org:conso-sheet-index');
+    Route::put('/{id}/tracking-logs/{logId}', 'updateTrackingLog')->middleware('permission_org:conso-sheet-index');
+    Route::delete('/{id}/tracking-logs/{logId}', 'deleteTrackingLog')->middleware('permission_org:conso-sheet-index');
     Route::put('/{id}/status', 'updateStatus')->middleware('permission_org:conso-sheet-index');
     Route::get('/{id}/status-logs', 'statusLogs')->middleware('permission_org:conso-sheet-index');
     Route::get('/{id}/medals', 'medals')->middleware('permission_org:conso-sheet-index');

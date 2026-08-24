@@ -51,7 +51,7 @@ class ChurchMemberController extends Controller
 
         $query->addSelect([
             'last_contacted' => ChurchMemberTrackingLog::query()
-                ->selectRaw('MAX(contact_date)')
+                ->selectRaw('MAX(contact_datetime)')
                 ->whereColumn('church_member_id', 'church_members.id'),
         ]);
 
@@ -70,27 +70,50 @@ class ChurchMemberController extends Controller
     public function create(Request $request)
     {
         $request->validate([
-            'org_id'         => 'required|exists:organizations,id',
-            'conso_sheet_id' => 'sometimes|nullable|exists:conso_sheets,id',
-            'name'           => 'required|string|max:255',
-            'last_name'      => 'required|string|max:255',
+            'org_id'              => 'required|exists:organizations,id',
+            'conso_sheet_id'      => 'sometimes|nullable|exists:conso_sheets,id',
+            'name'                => 'required|string|max:255',
+            'last_name'           => 'required|string|max:255',
+            'second_last_name'    => 'nullable|string|max:255',
+            'cellphone'           => 'nullable|string|max:50',
+            'years_old'           => 'nullable|integer|min:0|max:150',
+            'number_of_children'  => 'nullable|integer|min:0',
+            'marriage_status'     => 'nullable|string|max:50',
+            'address'             => 'nullable|string|max:500',
+            'url_image'           => 'nullable|string',
         ]);
 
         $member = ChurchMember::create($request->all());
-        return response()->json($member, 201);
+        return response()->json($member->append('url_image_s3'), 201);
     }
 
     public function update(Request $request, $id)
     {
         $member = ChurchMember::findOrFail($id);
 
-        $request->validate([
-            'name'      => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+        $data = $request->validate([
+            'name'               => 'required|string|max:255',
+            'last_name'          => 'required|string|max:255',
+            'second_last_name'   => 'nullable|string|max:255',
+            'cellphone'          => 'nullable|string|max:50',
+            'years_old'          => 'nullable|integer|min:0|max:150',
+            'number_of_children' => 'nullable|integer|min:0',
+            'marriage_status'    => 'nullable|string|max:50',
+            'address'            => 'nullable|string|max:500',
+            'url_image'          => 'nullable|string',
         ]);
 
-        $member->update($request->all());
-        return response()->json($member);
+        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+            $path = "ORG-{$member->org_id}/church-members/";
+            $treatedImage = treatImage($request->url_image, 95);
+            $data['url_image'] = saveS3Blob($treatedImage, $path, $member->url_image);
+        }
+
+        $member->update($data);
+        return response()->json([
+            'success' => 'Miembro actualizado exitosamente',
+            'data' => $member->append('url_image_s3'),
+        ]);
     }
 
     public function delete($id)
@@ -106,11 +129,11 @@ class ChurchMemberController extends Controller
     {
         $member = $this->findMemberInScope($id);
 
-        $query = $member->trackingLogs()->with('creator')->orderByDesc('contact_date')->orderByDesc('id');
+        $query = $member->trackingLogs()->with('creator')->orderByDesc('contact_datetime')->orderByDesc('id');
 
         $page = $request->get('page', 1);
         $itemsPerPage = $request->get('itemsPerPage', 10);
-        $sortBy = $request->get('sortBy', ['contact_date']);
+        $sortBy = $request->get('sortBy', ['contact_datetime']);
         $sortDesc = $request->get('sortDesc', [true]);
 
         if (!empty($sortBy) && is_array($sortBy)) {
@@ -137,21 +160,49 @@ class ChurchMemberController extends Controller
         $member = $this->findMemberInScope($id);
 
         $request->validate([
-            'contact_date'   => 'required|date',
-            'medium'         => 'required|in:whatsapp,llamada,presencial,sms',
-            'classification' => 'nullable|in:CONTESTA,NO CONTESTA',
-            'description'    => 'nullable|string|max:2000',
+            'contact_datetime' => 'required|date',
+            'medium'           => 'required|in:whatsapp,llamada,presencial,sms',
+            'classification'   => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description'      => 'nullable|string|max:2000',
         ]);
 
         $log = $member->trackingLogs()->create([
-            'contact_date'   => $request->contact_date,
-            'medium'         => $request->medium,
-            'classification' => $request->classification,
-            'description'    => $request->description,
-            'created_by'     => $this->user->id,
+            'contact_datetime' => $request->contact_datetime,
+            'medium'           => $request->medium,
+            'classification'   => $request->classification,
+            'description'      => $request->description,
+            'created_by'       => $this->user->id,
         ]);
 
         return response()->json($log->load('creator'), 201);
+    }
+
+    public function updateTrackingLog(Request $request, $id, $logId)
+    {
+        $member = $this->findMemberInScope($id);
+
+        $log = $member->trackingLogs()->findOrFail($logId);
+
+        $request->validate([
+            'contact_datetime' => 'sometimes|date',
+            'medium'           => 'sometimes|in:whatsapp,llamada,presencial,sms',
+            'classification'   => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description'      => 'nullable|string|max:2000',
+        ]);
+
+        $log->update($request->only(['contact_datetime', 'medium', 'classification', 'description']));
+
+        return response()->json($log->load('creator'));
+    }
+
+    public function deleteTrackingLog(Request $request, $id, $logId)
+    {
+        $member = $this->findMemberInScope($id);
+
+        $log = $member->trackingLogs()->findOrFail($logId);
+        $log->delete();
+
+        return response()->json(['message' => 'Tracking log deleted']);
     }
 
     // ── Clasificación (estado) ──────────────────────────────────────────

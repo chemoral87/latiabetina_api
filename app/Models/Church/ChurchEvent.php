@@ -30,7 +30,8 @@ class ChurchEvent extends Model {
   ];
 
   public function getUrlImageS3Attribute() {
-    return permanentUrlS3($this->url_image);
+    $path = is_string($this->url_image) ? $this->url_image : null;
+    return temporaryUrlS3($path);
   }
 
   public function organization() {
