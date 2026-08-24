@@ -14,6 +14,8 @@ class ChurchMemberController extends Controller
 
     protected $user;
 
+    protected string $path = '/church-members/';
+
     public function __construct() {
         $this->user = JWTAuth::user();
     }
@@ -69,7 +71,7 @@ class ChurchMemberController extends Controller
 
     public function create(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'org_id'              => 'required|exists:organizations,id',
             'conso_sheet_id'      => 'sometimes|nullable|exists:conso_sheets,id',
             'name'                => 'required|string|max:255',
@@ -83,7 +85,13 @@ class ChurchMemberController extends Controller
             'url_image'           => 'nullable|string',
         ]);
 
-        $member = ChurchMember::create($request->all());
+        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+            $path = "ORG-{$request->org_id}{$this->path}";
+            $treatedImage = treatImage($request->url_image, 95);
+            $data['url_image'] = saveS3Blob($treatedImage, $path);
+        }
+
+        $member = ChurchMember::create($data);
         return response()->json($member->append('url_image_s3'), 201);
     }
 
@@ -104,7 +112,7 @@ class ChurchMemberController extends Controller
         ]);
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
-            $path = "ORG-{$member->org_id}/church-members/";
+            $path = "ORG-{$member->org_id}{$this->path}";
             $treatedImage = treatImage($request->url_image, 95);
             $data['url_image'] = saveS3Blob($treatedImage, $path, $member->url_image);
         }
