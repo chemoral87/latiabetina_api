@@ -26,7 +26,20 @@ class ChurchMemberController extends Controller
     {
         $query = ChurchMember::query();
 
-        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+        // Si tiene church-member-all puede ver todos los orgs (sin restricción por org)
+        $hasAll = false;
+        try {
+            $hasAll = method_exists($this->user, 'hasPermissionTo') && $this->user->hasPermissionTo('church-member-all');
+        } catch (\Throwable $e) {
+            $hasAll = false;
+        }
+        if (!$hasAll) {
+            $hasAll = !empty($this->user->getOrgsByPermission('church-member-all'));
+        }
+
+        if (!$hasAll) {
+            $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+        }
 
         if ($request->boolean('mine')) {
             $query = $this->applyMineScope($query);

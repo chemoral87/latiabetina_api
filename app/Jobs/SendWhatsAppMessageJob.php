@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Models\WhatsappMessageLog;
+use App\Models\Church\ChurchMember;
+use App\Models\Church\ChurchMemberTrackingLog;
 
 class SendWhatsAppMessageJob implements ShouldQueue
 {
@@ -65,6 +67,28 @@ class SendWhatsAppMessageJob implements ShouldQueue
         }
 
         return config('app.name', 'system');
+    }
+
+    private function storeMemberTrackingLog(string $phoneNormalized, string $body): void
+    {
+        try {
+            // Buscar por cellphone normalizado (10→12 con 52)
+            $member = ChurchMember::whereNotNull('cellphone')->get()->first(function ($m) use ($phoneNormalized) {
+                return $this->normalizePhone($m->cellphone) === $phoneNormalized;
+            });
+            if (!$member) return;
+
+            ChurchMemberTrackingLog::create([
+                'church_member_id' => $member->id,
+                'contact_datetime' => now(),
+                'medium'           => 'whatsapp',
+                'classification'   => null,
+                'description'      => mb_substr($body, 0, 2000),
+                'created_by'       => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("WhatsApp Job: no se pudo crear tracking log para {$phoneNormalized}: " . $e->getMessage());
+        }
     }
 
     public function handle(): void
@@ -129,6 +153,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                                 'error_message'   => "Advertencia post-envío: " . $errorMessage,
                                 'original_log_id' => $this->originalLogId,
                             ]);
+                            $this->storeMemberTrackingLog($originalPhone, $finalMessage);
                             return;
                         }
 
@@ -152,6 +177,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                         'error_message'   => null,
                         'original_log_id' => $this->originalLogId,
                     ]);
+                    $this->storeMemberTrackingLog($originalPhone, $finalMessage);
                 } catch (\Exception $e) {
                     $errorMessage = $e->getMessage();
 
@@ -173,6 +199,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                             'error_message'   => "Advertencia post-envío: " . $errorMessage,
                             'original_log_id' => $this->originalLogId,
                         ]);
+                        $this->storeMemberTrackingLog($originalPhone, $finalMessage);
                         return;
                     }
 
