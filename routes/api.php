@@ -288,9 +288,10 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
-    Route::get('/status', 'status');
-    Route::post('/send', 'sendMessage');
-    Route::get('/logs', 'logs');
+    Route::get('/status', 'status')->middleware('permission_org:whatsapp-index');
+    Route::post('/send', 'sendMessage')->middleware('permission_org:whatsapp-send');
+    Route::get('/logs', 'logs')->middleware('permission_org:whatsapp-index');
+    Route::post('/logs/{id}/resend', 'resend')->middleware('permission_org:whatsapp-send');
   });
 
   // ========================

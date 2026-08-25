@@ -38,9 +38,10 @@ return [
   ],
 
   'whatsapp' => [
-    'bot_url'  => env('WHATSAPP_BOT_URL', 'http://localhost:3007'),
-    'password' => env('WHATSAPP_BOT_PASSWORD'),
-    'debug'    => env('WHATSAPP_DEBUG', false),
+    'bot_url'    => env('WHATSAPP_BOT_URL', 'http://localhost:3007'),
+    'password'   => env('WHATSAPP_BOT_PASSWORD'),
+    'debug'      => env('WHATSAPP_DEBUG', false),
+    'test_phone' => env('WHATSAPP_TEST_PHONE', '8120221172'),
   ],
 
 ];

@@ -19,6 +19,8 @@ class WhatsappMessageLog extends Model
         'error_message',
         'sent_at',
         'created_by',
+        'resend_count',
+        'original_log_id',
     ];
 
     protected $casts = [

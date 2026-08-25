@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Church\ChurchMember;
 use App\Models\Church\ChurchMemberTrackingLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ChurchMemberController extends Controller
@@ -92,6 +94,40 @@ class ChurchMemberController extends Controller
         }
 
         $member = ChurchMember::create($data);
+
+        // ── WhatsApp bienvenida (no bloquea el response) ───────────────────
+        // Se envía: "hola {name}, Bienvenido a la Iglesia Avivamiento Monterrey."
+        // Solo si hay cellphone. Usa la misma infraestructura que WhatsAppController.php:43 (queue whatsapp)
+        if (!empty($member->cellphone)) {
+            try {
+                $welcome = "hola {$member->name} {$member->last_name}, Bienvenido a la Iglesia Avivamiento Monterrey.";
+                $botUrl      = config('services.whatsapp.bot_url');
+                $botPassword = config('services.whatsapp.password');
+                $isDebug     = config('services.whatsapp.debug', false);
+
+                if (!empty($botUrl) && !empty($botPassword)) {
+                    SendWhatsAppMessageJob::dispatch(
+                        $member->cellphone,
+                        $welcome,
+                        null, // mediaUrl
+                        $botUrl,
+                        $botPassword,
+                        $isDebug
+                    );
+                } else {
+                    Log::warning('WhatsApp welcome skipped: bot_url/bot_password not configured', [
+                        'member_id' => $member->id,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // No romper la creación si falla el dispatch
+                Log::error('WhatsApp welcome dispatch failed: ' . $e->getMessage(), [
+                    'member_id' => $member->id,
+                    'phone'     => $member->cellphone,
+                ]);
+            }
+        }
+
         return response()->json($member->append('url_image_s3'), 201);
     }
 

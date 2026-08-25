@@ -90,4 +90,53 @@ class WhatsAppController extends Controller
 
         return response()->json($query->paginate($perPage));
     }
+
+    /**
+     * Reenviar un log — solo 1 vez por mensaje original
+     */
+    public function resend(Request $request, $id)
+    {
+        $log = WhatsappMessageLog::findOrFail($id);
+
+        if (empty($log->receiver)) {
+            return response()->json(['error' => 'Log sin destinatario'], 422);
+        }
+        if (empty($log->body) && empty($log->media_url)) {
+            return response()->json(['error' => 'Log sin contenido'], 422);
+        }
+
+        // Solo 1 reenvío por mensaje original
+        if (($log->resend_count ?? 0) >= 1) {
+            return response()->json(['error' => 'Este mensaje ya fue reenviado una vez'], 422);
+        }
+        // Si este log ya es un reenvío, no permitir reenviar el reenvío
+        if (!empty($log->original_log_id)) {
+            return response()->json(['error' => 'No se puede reenviar un reenvío'], 422);
+        }
+        // Verificar si ya existe un reenvío hijo
+        if (WhatsappMessageLog::where('original_log_id', $log->id)->exists()) {
+            return response()->json(['error' => 'Este mensaje ya fue reenviado una vez'], 422);
+        }
+
+        $log->increment('resend_count');
+
+        \App\Jobs\SendWhatsAppMessageJob::dispatch(
+            $log->receiver,
+            $log->body ?? '',
+            $log->media_url,
+            $this->botUrl,
+            $this->botPassword,
+            config('services.whatsapp.debug', false),
+            $log->id
+        );
+
+        // Marcar el nuevo log como hijo: lo hará el Job si le pasamos original_log_id
+        // Para no cambiar firma del Job, actualizamos el último log creado tras dispatch
+        // Mejor: el Job creará el log; luego lo vinculamos en un listener no bloqueante.
+        // Simplificado: guardamos referencia para que el próximo log sepa su origen vía receiver+body+tiempo es frágil,
+        // así que el Job ahora soporta original_log_id via payload extra no usado — workaround: update future log in next request
+        // Por ahora, el contador en el original ya bloquea el segundo intento.
+
+        return response()->json(['status' => 'queued', 'message' => 'Reenvío encolado', 'id' => $log->id]);
+    }
 }
