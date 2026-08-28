@@ -112,4 +112,9 @@ return [
   'sale_item_invalid_org' => 'Uno de los artículos no pertenece a la organización seleccionada.',
   'sale_item_insufficient_stock' => 'No hay stock suficiente para :name.',
 
+  'church-member_create' => 'Miembro de Iglesia creado',
+  'church-member_update' => 'Miembro de Iglesia guardado',
+  'church-member_delete' => 'Miembro de Iglesia eliminado',
+  'church-member_status_update' => 'Estado actualizado',
+
 ];

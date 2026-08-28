@@ -26,27 +26,18 @@ class ChurchMemberController extends Controller
     {
         $query = ChurchMember::query();
 
-        // Si tiene church-member-all puede ver todos los orgs (sin restricción por org)
-        $hasAll = false;
-        try {
-            $hasAll = method_exists($this->user, 'hasPermissionTo') && $this->user->hasPermissionTo('church-member-all');
-        } catch (\Throwable $e) {
-            $hasAll = false;
-        }
-        if (!$hasAll) {
-            $hasAll = !empty($this->user->getOrgsByPermission('church-member-all'));
-        }
+        $hasAll = $this->hasChurchMemberAll();
 
-        if (!$hasAll) {
+        if ($hasAll) {
+            // For church-member-all, apply org scope based on permitted orgs
+            $query = $this->applyChurchMemberAllScope($query);
+        } else {
+            // For regular permissions, apply org permission scope
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
         }
 
-        if ($request->boolean('mine')) {
+        if (!$hasAll && $request->boolean('mine')) {
             $query = $this->applyMineScope($query);
-        }
-
-        if ($request->has('conso_sheet_id') && !empty($request->conso_sheet_id)) {
-            $query->where('conso_sheet_id', $request->conso_sheet_id);
         }
 
         if ($request->has('status') && !empty($request->status)) {
@@ -57,29 +48,45 @@ class ChurchMemberController extends Controller
             $query->where('org_id', $request->org_id);
         }
 
-        if ($request->has('filter') && !empty($request->filter)) {
-            $term = '%' . $request->filter . '%';
-            $query->where(function ($q) use ($term) {
-                $q->where('name', 'like', $term)
-                  ->orWhere('last_name', 'like', $term)
-                  ->orWhere('cellphone', 'like', $term);
-            });
+        if ($request->has('conso_sheet_id') && !empty($request->conso_sheet_id)) {
+            $query->where('conso_sheet_id', $request->conso_sheet_id);
         }
 
-        $query->addSelect([
-            'last_contacted' => ChurchMemberTrackingLog::query()
-                ->selectRaw('MAX(contact_datetime)')
-                ->whereColumn('church_member_id', 'church_members.id'),
-        ]);
+       if ($request->has('filter') && !empty($request->filter)) {
+           $term = '%' . $request->filter . '%';
+           $query->where(function ($q) use ($term) {
+               $q->where('name', 'like', $term)
+                 ->orWhere('last_name', 'like', $term)
+                 ->orWhere('cellphone', 'like', $term);
+           });
+       }
 
-        return response()->json($query->orderByDesc('last_contacted')->get());
+       $query->addSelect([
+           'last_contacted' => ChurchMemberTrackingLog::query()
+               ->selectRaw('MAX(contact_datetime)')
+               ->whereColumn('church_member_id', 'church_members.id'),
+           'last_contacted_by' => ChurchMemberTrackingLog::query()
+               ->leftJoin('users', 'church_member_tracking_logs.created_by', '=', 'users.id')
+               ->selectRaw('CASE WHEN users.id IS NOT NULL THEN CONCAT(users.name, " ", users.last_name) ELSE "Sistema" END as name')
+               ->whereColumn('church_member_tracking_logs.church_member_id', 'church_members.id')
+               ->orderByDesc('church_member_tracking_logs.contact_datetime')
+               ->orderByDesc('church_member_tracking_logs.id')
+               ->limit(1),
+       ]);
+
+       return response()->json($query->orderByDesc('last_contacted')->get());
     }
 
     public function show($id)
     {
         $query = ChurchMember::query();
-        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
-        $query = $this->applyMineScope($query);
+        // church-member-all applies org scope based on permitted orgs
+        if ($this->hasChurchMemberAll()) {
+            $query = $this->applyChurchMemberAllScope($query);
+        } else {
+            $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+            $query = $this->applyMineScope($query);
+        }
         $member = $query->findOrFail($id);
         return response()->json($member);
     }
@@ -98,6 +105,7 @@ class ChurchMemberController extends Controller
             'marriage_status'     => 'nullable|string|max:50',
             'address'             => 'nullable|string|max:500',
             'url_image'           => 'nullable|string',
+            'status'              => 'nullable|in:ACTIVO,NO CONTESTA,NO MOLESTAR,VISITA',
         ]);
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
@@ -106,7 +114,12 @@ class ChurchMemberController extends Controller
             $data['url_image'] = saveS3Blob($treatedImage, $path);
         }
 
-        $member = ChurchMember::create($data);
+        // Set default status if not provided
+if (!isset($data['status'])) {
+    $data['status'] = 'ACTIVO';
+}
+
+$member = ChurchMember::create($data);
 
         // ── WhatsApp bienvenida (no bloquea el response) ───────────────────
         // Se envía: "hola {name}, Bienvenido a la Iglesia Avivamiento Monterrey."
@@ -141,7 +154,10 @@ class ChurchMemberController extends Controller
             }
         }
 
-        return response()->json($member->append('url_image_s3'), 201);
+        return response()->json([
+            'success' => __('messa.church-member_create'),
+            'data' => $member->append('url_image_s3'), // Includes status field
+        ], 201);
     }
 
     public function update(Request $request, $id)
@@ -168,7 +184,7 @@ class ChurchMemberController extends Controller
 
         $member->update($data);
         return response()->json([
-            'success' => 'Miembro actualizado exitosamente',
+            'success' => __('messa.church-member_update'),
             'data' => $member->append('url_image_s3'),
         ]);
     }
@@ -177,7 +193,7 @@ class ChurchMemberController extends Controller
     {
         $member = ChurchMember::findOrFail($id);
         $member->delete();
-        return response()->json(['message' => 'Church member deleted successfully']);
+        return response()->json(['success' => __('messa.church-member_delete')]);
     }
 
     // ── Bitácora de seguimiento ─────────────────────────────────────────
@@ -287,7 +303,10 @@ class ChurchMemberController extends Controller
             ]);
         }
 
-        return response()->json($member);
+        return response()->json([
+            'success' => __('messa.church-member_status_update'),
+            'data' => $member,
+        ]);
     }
 
     public function statusLogs(Request $request, $id)
@@ -337,8 +356,38 @@ class ChurchMemberController extends Controller
     private function findMemberInScope($id): ChurchMember
     {
         $query = ChurchMember::query();
-        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+        // church-member-all applies org scope based on permitted orgs
+        if ($this->hasChurchMemberAll()) {
+            $query = $this->applyChurchMemberAllScope($query);
+        } else {
+            $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+        }
         return $query->findOrFail($id);
+    }
+
+    private function hasChurchMemberAll(): bool
+    {
+        if (!$this->user) {
+            return false;
+        }
+        try {
+            if (method_exists($this->user, 'hasPermissionTo') && $this->user->hasPermissionTo('church-member-all')) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // fall through to getOrgsByPermission
+        }
+        return !empty($this->user->getOrgsByPermission('church-member-all'));
+    }
+
+    private function applyChurchMemberAllScope($query)
+    {
+        $orgIds = $this->user->getOrgsByPermission('church-member-all');
+        if (!empty($orgIds)) {
+            return $query->whereIn('org_id', $orgIds);
+        }
+        // No organizations with this permission - return no results
+        return $query->whereRaw('1 = 0');
     }
 
     private function applyMineScope($query)

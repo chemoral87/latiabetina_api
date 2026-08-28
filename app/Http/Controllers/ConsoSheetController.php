@@ -12,7 +12,7 @@ class ConsoSheetController extends Controller
 {
     use AppliesOrgPermissionScope;
 
-      protected $user; 
+      protected $user;
 
   public function __construct() {
     $this->user = JWTAuth::user();
@@ -21,7 +21,7 @@ class ConsoSheetController extends Controller
     {
         $query = ConsoSheet::with(['creator', 'organization']);
 
-        // Si tiene conso-sheet-all puede ver todos los orgs (sin restricción)
+        // Si tiene conso-sheet-all puede ver todos los orgs (con restricción a orgs permitidos)
         $hasAll = false;
         try {
             $hasAll = method_exists($this->user, 'hasPermissionTo') && $this->user->hasPermissionTo('conso-sheet-all');
@@ -32,7 +32,16 @@ class ConsoSheetController extends Controller
             $hasAll = !empty($this->user->getOrgsByPermission('conso-sheet-all'));
         }
 
-        if (!$hasAll) {
+        if ($hasAll) {
+            // For conso-sheet-all, apply org scope based on permitted orgs
+            $orgIds = $this->user->getOrgsByPermission('conso-sheet-all');
+            if (!empty($orgIds)) {
+                $query->whereIn('org_id', $orgIds);
+            } else {
+                // No organizations with this permission - return no results
+                $query->whereRaw('1 = 0');
+            }
+        } else {
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
 
             $query->where(function ($q) {

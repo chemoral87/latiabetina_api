@@ -11,6 +11,7 @@ class CheckOrgPermission
     $user = auth('api')->user();
     $permissions_orgs = $user ? $user->getOrgsByPermission() : [];
     $required = count($permissions) > 0 ? $permissions : [''];
+
     foreach ($required as $perm) {
       $perm = trim($perm);
       if ($perm && isset($permissions_orgs[$perm])) {
