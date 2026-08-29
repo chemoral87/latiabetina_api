@@ -19,9 +19,15 @@ The controller uses two permission layers to control data access:
 
 1. **`church-member-all`** — checked first via `hasPermissionTo()` or `getOrgsByPermission()`. If the user has it, the query is filtered by the list of org IDs returned by `getOrgsByPermission('church-member-all')`.
 2. **`conso-sheet-index`** — the fallback. Applied through `AppliesOrgPermissionScope::applyOrgPermissionScope()`, which filters by org IDs the user has this permission for.
-3. **"Mine" filter** (`?mine=true`) — only available when the user does **not** have `church-member-all`. Filters to members where the user is the creator of the associated `conso_sheet` **or** is listed as a consolidator of the member.
+3. **"Mine" filter** (`?mine=true`) — only available when the user does **not** have `church-member-all`. Filters to members where the user is the creator of the associated `conso_sheet` **or** is listed as a consolidator of the member. Applied on `index()`; `show()` also applies it unconditionally for non-`church-member-all` users. The tracking-log/status/medal/consolidator sub-resources below resolve their member via `findMemberInScope()`, which applies the `church-member-all` / `conso-sheet-index` org scope but **not** the "mine" filter — so a user with org-wide `conso-sheet-index` can act on any member's sub-resources in that org even if they aren't the creator or a consolidator.
 
 > If a user has neither permission for any organization, queries return zero results (`WHERE 1 = 0`).
+
+> Permissions in this app are granted **per organization** through `Profile` (see `User::getOrgsByPermission()`), not via Spatie's direct `user->permissions` relation. Any check that needs to be org-aware (including the consolidator-assignment check below) must go through `getOrgsByPermission()`, not `hasPermissionTo()`/`whereDoesntHave('permissions', ...)`.
+
+### Not found / access denied
+
+`show()` and `findMemberInScope()` (used by every sub-resource action) explicitly check for a missing/out-of-scope record and call `abort(404, '...')` with a clean, user-safe message — they do **not** rely on `findOrFail()`'s default exception message, which would otherwise leak the Eloquent model class and ID (`"No query results for model [...] 29"`). A member outside the caller's org scope is indistinguishable from a non-existent one: both return a plain 404.
 
 ---
 
@@ -32,10 +38,10 @@ The controller uses two permission layers to control data access:
 | Method | Action | Description |
 |---|---|---|
 | `GET /church-members` | `index` | List all members in scope. Returns last contact datetime and last contacted by. |
-| `GET /church-members/{id}` | `show` | Get a single member by ID (within permission scope). |
+| `GET /church-members/{id}` | `show` | Get a single member by ID (within permission scope). Returns 404 (clean message, no model/ID leak) if the member doesn't exist or is outside the caller's org scope. |
 | `POST /church-members` | `create` | Create a new member. Auto-sends a WhatsApp welcome message if a cellphone is provided and WhatsApp is configured. |
-| `PUT /church-members/{id}` | `update` | Update an existing member. |
-| `DELETE /church-members/{id}` | `delete` | Soft-delete a member. |
+| `PUT /church-members/{id}` | `update` | Update an existing member. Returns `{success, data}`. |
+| `DELETE /church-members/{id}` | `delete` | Soft-delete a member. Returns `{success}`. |
 
 #### `index` query parameters
 
@@ -71,9 +77,9 @@ The controller uses two permission layers to control data access:
 | Method | Action | Description |
 |---|---|---|
 | `GET /church-members/{id}/tracking-logs` | `trackingLogs` | Paginated list of tracking logs for a member. Supports `page`, `itemsPerPage`, `sortBy`, `sortDesc`. |
-| `POST /church-members/{id}/tracking-logs` | `storeTrackingLog` | Create a new tracking log entry. |
-| `PUT /church-members/{id}/tracking-logs/{logId}` | `updateTrackingLog` | Update an existing tracking log entry. |
-| `DELETE /church-members/{id}/tracking-logs/{logId}` | `deleteTrackingLog` | Delete a tracking log entry. |
+| `POST /church-members/{id}/tracking-logs` | `storeTrackingLog` | Create a new tracking log entry. Returns the created log (with `creator`), no `success` envelope. |
+| `PUT /church-members/{id}/tracking-logs/{logId}` | `updateTrackingLog` | Update an existing tracking log entry. Returns `{success, data}`. |
+| `DELETE /church-members/{id}/tracking-logs/{logId}` | `deleteTrackingLog` | Delete a tracking log entry. Returns `{success}`. |
 
 #### `storeTrackingLog` / `updateTrackingLog` fields
 
@@ -90,7 +96,7 @@ The controller uses two permission layers to control data access:
 
 | Method | Action | Description |
 |---|---|---|
-| `PUT /church-members/{id}/status` | `updateStatus` | Change a member's status. Creates a status log entry when the status actually changes. |
+| `PUT /church-members/{id}/status` | `updateStatus` | Change a member's status. Creates a status log entry when the status actually changes. Returns `{success, data}`. |
 | `GET /church-members/{id}/status-logs` | `statusLogs` | List all status change logs for a member. |
 
 #### `updateStatus` fields
@@ -99,6 +105,29 @@ The controller uses two permission layers to control data access:
 |---|---|---|
 | `status` | yes | `ACTIVO`, `NO CONTESTA`, `NO MOLESTAR`, `VISITA` |
 | `reason` | no | Max 1000 chars. Explanation for the status change. |
+
+---
+
+### Consolidadores
+
+| Method | Action | Description |
+|---|---|---|
+| `GET /church-members/{id}/consolidators` | `consolidators` | List the member's assigned consolidators (`id`, `name`, `last_name`, `second_last_name`, `email`). |
+| `PUT /church-members/{id}/consolidators` | `syncConsolidators` | Replace the member's consolidators with the given set. Returns `{success, data}` where `data` is the refreshed consolidator list. |
+
+#### `syncConsolidators` payload
+
+```json
+{ "consolidator_ids": [15, 16] }
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `consolidator_ids` | yes | Array of user IDs. Must each exist in `users`. |
+| `consolidator_ids.*` | yes | Integer, must reference an existing user. |
+
+- **Double-wrapped payload tolerance** — some clients accidentally send `{"consolidator_ids": {"consolidator_ids": [...]}}`. The endpoint detects this shape and unwraps it before validating, so both the flat and double-wrapped forms are accepted.
+- **Eligibility check** — every candidate user must hold the `conso-sheet-index` permission for the **member's own organization** (checked via `User::getOrgsByPermission('conso-sheet-index')`, not a global/direct permission check). If any candidate lacks it, the whole request is rejected with `400 {"error": "Some users do not have the required permission."}` — no partial sync happens.
 
 ---
 
@@ -117,6 +146,19 @@ The controller uses two permission layers to control data access:
 | `description` | no | Max 255 chars. |
 
 ---
+
+## Response Conventions
+
+Not every endpoint follows the same response shape:
+
+| Shape | Used by |
+|---|---|
+| `{success: string, data: ...}` | `create`, `update`, `updateStatus`, `updateTrackingLog`, `syncConsolidators` |
+| `{success: string}` | `delete`, `deleteTrackingLog` |
+| Raw resource (no envelope) | `index`, `show`, `trackingLogs`, `storeTrackingLog`, `statusLogs`, `consolidators` (GET), `medals`, `storeMedal` |
+| `{error: string}` | Validation-style failures outside Laravel's default 422 handling, e.g. `syncConsolidators`'s permission check (`400`) |
+
+The frontend's `withNotify()` wrapper auto-toasts any response containing a `success`/`warning`/`error` key, so manual success toasts in calling code would double up for the endpoints in the first two rows above.
 
 ## Data Relationships
 

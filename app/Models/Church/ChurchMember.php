@@ -16,6 +16,7 @@ class ChurchMember extends Model implements AuditableContract
 
     protected $fillable = [
         'org_id',
+    
         'conso_sheet_id',
         'name',
         'last_name',
@@ -27,6 +28,7 @@ class ChurchMember extends Model implements AuditableContract
         'marriage_status',
         'url_image',
         'status',
+        'created_by',
     ];
 
     protected $hidden = ['url_image'];
@@ -47,6 +49,11 @@ class ChurchMember extends Model implements AuditableContract
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function consoSheet()

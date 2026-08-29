@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Church\ChurchMember;
 use App\Models\Church\ChurchMemberTrackingLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -72,9 +73,8 @@ class ChurchMemberController extends Controller
                ->orderByDesc('church_member_tracking_logs.contact_datetime')
                ->orderByDesc('church_member_tracking_logs.id')
                ->limit(1),
-       ]);
-
-       return response()->json($query->orderByDesc('last_contacted')->get());
+       ]);        $query->with('creator:id,name,last_name');
+        return response()->json($query->orderByDesc('last_contacted')->get());
     }
 
     public function show($id)
@@ -87,7 +87,10 @@ class ChurchMemberController extends Controller
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
             $query = $this->applyMineScope($query);
         }
-        $member = $query->findOrFail($id);
+        $member = $query->with('creator:id,name,last_name')->find($id);
+        if (!$member) {
+            abort(404, 'Miembro no encontrado o no tienes acceso a esta organización.');
+        }
         return response()->json($member);
     }
 
@@ -118,6 +121,8 @@ class ChurchMemberController extends Controller
 if (!isset($data['status'])) {
     $data['status'] = 'ACTIVO';
 }
+
+$data['created_by'] = $this->user->id;
 
 $member = ChurchMember::create($data);
 
@@ -265,7 +270,10 @@ $member = ChurchMember::create($data);
 
         $log->update($request->only(['contact_datetime', 'medium', 'classification', 'description']));
 
-        return response()->json($log->load('creator'));
+        return response()->json([
+            'success' => 'Interacción actualizada exitosamente',
+            'data'    => $log->load('creator'),
+        ]);
     }
 
     public function deleteTrackingLog(Request $request, $id, $logId)
@@ -275,7 +283,7 @@ $member = ChurchMember::create($data);
         $log = $member->trackingLogs()->findOrFail($logId);
         $log->delete();
 
-        return response()->json(['message' => 'Tracking log deleted']);
+        return response()->json(['success' => 'Interacción eliminada exitosamente']);
     }
 
     // ── Clasificación (estado) ──────────────────────────────────────────
@@ -319,6 +327,66 @@ $member = ChurchMember::create($data);
             ->get();
 
         return response()->json($logs);
+    }
+
+    // ── Consolidadores ────────────────────────────────────────────────
+
+    public function consolidators($id)
+    {
+        $member = $this->findMemberInScope($id);
+
+        $consolidators = $member->consolidators()
+            ->select('id', 'name', 'last_name', 'second_last_name', 'email')
+            ->get();
+
+        return response()->json($consolidators);
+    }
+
+    public function syncConsolidators(Request $request, $id)
+    {
+        $member = $this->findMemberInScope($id);
+
+        // Some clients accidentally double-wrap the payload as
+        // {"consolidator_ids": {"consolidator_ids": [...]}} — unwrap it before validating.
+        $payload = $request->input('consolidator_ids');
+        if (is_array($payload) && array_key_exists('consolidator_ids', $payload)) {
+            $request->merge(['consolidator_ids' => $payload['consolidator_ids']]);
+        }
+
+        // Validate input
+        $request->validate([
+            'consolidator_ids'   => 'required|array',
+            'consolidator_ids.*' => 'integer|exists:users,id',
+        ]);
+
+        // Validate that each user has the 'conso-sheet-index' permission for this member's org.
+        // ('church-member-index' is not a real permission — it doesn't exist in InitSeeder;
+        // the permission that grants visibility into a church member's org is 'conso-sheet-index'.)
+        // Permissions in this app are granted per-org via Profile (see User::getOrgsByPermission),
+        // not via Spatie's direct user->permissions relation, so check org-scoped access instead.
+        $candidateIds = collect($request->consolidator_ids)->unique()->values();
+        $invalidUserIds = $candidateIds->filter(function ($userId) use ($member) {
+            $candidate = User::find($userId);
+            if (!$candidate) {
+                return true;
+            }
+            $orgIds = $candidate->getOrgsByPermission('conso-sheet-index');
+            return !in_array($member->org_id, $orgIds);
+        });
+        if ($invalidUserIds->isNotEmpty()) {
+            return response()->json(['error' => 'Some users do not have the required permission.'], 400);
+        }
+
+        $member->consolidators()->sync($request->consolidator_ids);
+
+        $consolidators = $member->consolidators()
+            ->select('id', 'name', 'last_name', 'second_last_name', 'email')
+            ->get();
+
+        return response()->json([
+            'success' => 'Consolidadores actualizados',
+            'data'    => $consolidators,
+        ]);
     }
 
     // ── Medallas ─────────────────────────────────────────────────────────
@@ -393,7 +461,8 @@ $member = ChurchMember::create($data);
     private function applyMineScope($query)
     {
         return $query->where(function ($q) {
-            $q->whereHas('consoSheet', function ($q) {
+            $q->where('created_by', $this->user->id)
+              ->orWhereHas('consoSheet', function ($q) {
                 $q->where('created_by', $this->user->id);
             })->orWhereHas('consolidators', function ($q) {
                 $q->where('users.id', $this->user->id);
