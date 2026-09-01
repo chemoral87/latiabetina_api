@@ -282,8 +282,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
   });
 
   Route::prefix('song')->controller(SongController::class)->group(function () {
-    Route::get('/', 'index')->middleware('permission_org:song-index');
-    Route::get('/{song}', 'show')->middleware('permission_org:song-index');
+    Route::get('/', 'index');
+    Route::get('/{song}', 'show');
     Route::post('/', 'store')->middleware('permission_org:song-create');
     Route::put('/{song}', 'update')->middleware('permission_org:song-update');
     Route::delete('/{song}', 'destroy')->middleware('permission_org:song-delete');

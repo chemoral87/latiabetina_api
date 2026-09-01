@@ -108,17 +108,85 @@ class RoleController extends Controller {
   }
 
   public function addPermission(Request $request, $id) {
-    $this->validate($request, [
-      'name' => 'required|string|max:255',
-    ]);
+    // Accept either `name` as comma-separated string or `names` as array for bulk creation
+    // e.g. "song-update, song-delete" -> creates two permissions in one call
+    $raw = $request->input('name');
+    $namesInput = $request->input('names');
+
+    $names = [];
+    if (is_array($namesInput) && !empty($namesInput)) {
+      $names = $namesInput;
+    } elseif (is_string($raw) && trim($raw) !== '') {
+      $names = explode(',', $raw);
+    } elseif (is_array($raw) && !empty($raw)) {
+      $names = $raw;
+    }
+
+    $names = array_map('trim', $names);
+    $names = array_filter($names, fn($n) => $n !== '');
+
+    // Deduplicate case-insensitive, preserve original casing of first occurrence
+    $seen = [];
+    $unique = [];
+    foreach ($names as $n) {
+      $low = strtolower($n);
+      if (!isset($seen[$low])) {
+        $seen[$low] = true;
+        $unique[] = $n;
+      }
+    }
+    $names = $unique;
+
+    if (empty($names)) {
+      return response()->json([
+        'message' => 'The name field is required.',
+        'errors' => ['name' => ['El campo nombre es requerido.']],
+      ], 422);
+    }
+
+    // Validate each name
+    $validationErrors = [];
+    foreach ($names as $idx => $n) {
+      if (mb_strlen($n) > 255) {
+        $validationErrors[$idx] = 'El nombre no debe exceder 255 caracteres.';
+      } elseif (!preg_match('/^[a-z0-9\-_]+$/i', $n)) {
+        // Allow typical permission pattern: letters, numbers, dash, underscore
+        // If you need other chars, relax this regex
+        $validationErrors[$idx] = 'El nombre solo puede contener letras, números, guiones y guiones bajos.';
+      }
+    }
+    if (!empty($validationErrors)) {
+      return response()->json([
+        'message' => 'Validation failed.',
+        'errors' => ['name' => array_values($validationErrors)],
+      ], 422);
+    }
 
     $role = Role::findOrFail($id);
-    $permission = Permission::firstOrCreate(['name' => trim($request->input('name')), 'guard_name' => 'api']);
-    $role->givePermissionTo($permission);
+    $guard = $role->guard_name ?? 'web';
+    $created = [];
+
+    foreach ($names as $name) {
+      $permission = Permission::firstOrCreate(['name' => trim($name), 'guard_name' => $guard]);
+      if (!$role->hasPermissionTo($permission)) {
+        $role->givePermissionTo($permission);
+      }
+      $created[] = ['id' => $permission->id, 'name' => $permission->name];
+    }
+
+    // Backward compatibility: single case still returns `permission`
+    if (count($created) === 1) {
+      return response()->json([
+        'success' => __('messa.role_permission_update'),
+        'permission' => $created[0],
+        'permissions' => $created,
+      ]);
+    }
 
     return response()->json([
       'success' => __('messa.role_permission_update'),
-      'permission' => ['id' => $permission->id, 'name' => $permission->name],
+      'permissions' => $created,
+      'permission' => $created[0],
     ]);
   }
 
