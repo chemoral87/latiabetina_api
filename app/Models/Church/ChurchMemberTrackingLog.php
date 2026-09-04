@@ -32,4 +32,9 @@ class ChurchMemberTrackingLog extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function getChurchMemberNameAttribute()
+    {
+        return $this->churchMember ? $this->churchMember->name . ' ' . $this->churchMember->last_name : null;
+    }
 }

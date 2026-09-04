@@ -15,9 +15,13 @@ class PermissionController extends Controller {
     $sortDesc = $request->get('sortDesc');
     $filter = $request->get("filter");
 
-    foreach ($request->get('sortBy') as $index => $column) {
-      $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-      $query = $query->orderBy($column, $sortDirection);
+    if ($sortBy) {
+      foreach ($sortBy as $index => $column) {
+        $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
+        $query = $query->orderBy($column, $sortDirection);
+      }
+    } else {
+      $query = $query->orderBy('name', 'ASC');
     }
     if ($filter) {
       $query->where("name", "like", "%" . $filter . "%");

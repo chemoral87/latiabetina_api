@@ -116,5 +116,6 @@ return [
   'church-member_update' => 'Miembro de Iglesia guardado',
   'church-member_delete' => 'Miembro de Iglesia eliminado',
   'church-member_status_update' => 'Estado actualizado',
+  'church-member-tracking-log_create' => 'Interacción registrada',
 
 ];

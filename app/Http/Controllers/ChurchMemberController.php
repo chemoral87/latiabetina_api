@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Church\ChurchMember;
+use App\Models\Church\ChurchMemberConsolidatorLog;
 use App\Models\Church\ChurchMemberTrackingLog;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -62,7 +63,7 @@ class ChurchMemberController extends Controller
            });
        }
 
-       $query->addSelect([
+        $query->addSelect([
            'last_contacted' => ChurchMemberTrackingLog::query()
                ->selectRaw('MAX(contact_datetime)')
                ->whereColumn('church_member_id', 'church_members.id'),
@@ -73,7 +74,16 @@ class ChurchMemberController extends Controller
                ->orderByDesc('church_member_tracking_logs.contact_datetime')
                ->orderByDesc('church_member_tracking_logs.id')
                ->limit(1),
-       ]);        $query->with('creator:id,name,last_name');
+           'assigned_by' => ChurchMemberConsolidatorLog::query()
+               ->leftJoin('users as assigner', 'church_member_consolidator_logs.changed_by', '=', 'assigner.id')
+               ->selectRaw('CONCAT(assigner.name, " ", assigner.last_name)')
+               ->whereColumn('church_member_consolidator_logs.church_member_id', 'church_members.id')
+               ->where('church_member_consolidator_logs.consolidator_id', $this->user->id)
+               ->where('church_member_consolidator_logs.action', 'assigned')
+               ->orderByDesc('church_member_consolidator_logs.id')
+               ->limit(1),
+       ]);
+       $query->with('creator:id,name,last_name');
         return response()->json($query->orderByDesc('last_contacted')->get());
     }
 
@@ -87,7 +97,9 @@ class ChurchMemberController extends Controller
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
             $query = $this->applyMineScope($query);
         }
-        $member = $query->with('creator:id,name,last_name')->find($id);
+        $member = $query->with('creator:id,name,last_name')
+            ->with(['consolidators:id,name,last_name,second_last_name,email'])
+            ->find($id);
         if (!$member) {
             abort(404, 'Miembro no encontrado o no tienes acceso a esta organización.');
         }
@@ -201,91 +213,6 @@ $member = ChurchMember::create($data);
         return response()->json(['success' => __('messa.church-member_delete')]);
     }
 
-    // ── Bitácora de seguimiento ─────────────────────────────────────────
-
-    public function trackingLogs(Request $request, $id)
-    {
-        $member = $this->findMemberInScope($id);
-
-        $query = $member->trackingLogs()->with('creator')->orderByDesc('contact_datetime')->orderByDesc('id');
-
-        $page = $request->get('page', 1);
-        $itemsPerPage = $request->get('itemsPerPage', 10);
-        $sortBy = $request->get('sortBy', ['contact_datetime']);
-        $sortDesc = $request->get('sortDesc', [true]);
-
-        if (!empty($sortBy) && is_array($sortBy)) {
-            foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
-                $query->orderBy($field, $dir);
-            }
-        }
-
-        $total = $query->count();
-        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
-
-        return response()->json([
-            'data' => $logs->items(),
-            'total' => $total,
-            'current_page' => $logs->currentPage(),
-            'last_page' => $logs->lastPage(),
-            'per_page' => $logs->perPage(),
-        ]);
-    }
-
-    public function storeTrackingLog(Request $request, $id)
-    {
-        $member = $this->findMemberInScope($id);
-
-        $request->validate([
-            'contact_datetime' => 'required|date',
-            'medium'           => 'required|in:whatsapp,llamada,presencial,sms',
-            'classification'   => 'nullable|in:CONTESTA,NO CONTESTA',
-            'description'      => 'nullable|string|max:2000',
-        ]);
-
-        $log = $member->trackingLogs()->create([
-            'contact_datetime' => $request->contact_datetime,
-            'medium'           => $request->medium,
-            'classification'   => $request->classification,
-            'description'      => $request->description,
-            'created_by'       => $this->user->id,
-        ]);
-
-        return response()->json($log->load('creator'), 201);
-    }
-
-    public function updateTrackingLog(Request $request, $id, $logId)
-    {
-        $member = $this->findMemberInScope($id);
-
-        $log = $member->trackingLogs()->findOrFail($logId);
-
-        $request->validate([
-            'contact_datetime' => 'sometimes|date',
-            'medium'           => 'sometimes|in:whatsapp,llamada,presencial,sms',
-            'classification'   => 'nullable|in:CONTESTA,NO CONTESTA',
-            'description'      => 'nullable|string|max:2000',
-        ]);
-
-        $log->update($request->only(['contact_datetime', 'medium', 'classification', 'description']));
-
-        return response()->json([
-            'success' => 'Interacción actualizada exitosamente',
-            'data'    => $log->load('creator'),
-        ]);
-    }
-
-    public function deleteTrackingLog(Request $request, $id, $logId)
-    {
-        $member = $this->findMemberInScope($id);
-
-        $log = $member->trackingLogs()->findOrFail($logId);
-        $log->delete();
-
-        return response()->json(['success' => 'Interacción eliminada exitosamente']);
-    }
-
     // ── Clasificación (estado) ──────────────────────────────────────────
 
     public function updateStatus(Request $request, $id)
@@ -355,15 +282,11 @@ $member = ChurchMember::create($data);
 
         // Validate input
         $request->validate([
-            'consolidator_ids'   => 'required|array',
+            'consolidator_ids'   => 'nullable|array',
             'consolidator_ids.*' => 'integer|exists:users,id',
         ]);
 
         // Validate that each user has the 'conso-sheet-index' permission for this member's org.
-        // ('church-member-index' is not a real permission — it doesn't exist in InitSeeder;
-        // the permission that grants visibility into a church member's org is 'conso-sheet-index'.)
-        // Permissions in this app are granted per-org via Profile (see User::getOrgsByPermission),
-        // not via Spatie's direct user->permissions relation, so check org-scoped access instead.
         $candidateIds = collect($request->consolidator_ids)->unique()->values();
         $invalidUserIds = $candidateIds->filter(function ($userId) use ($member) {
             $candidate = User::find($userId);
@@ -377,7 +300,33 @@ $member = ChurchMember::create($data);
             return response()->json(['error' => 'Some users do not have the required permission.'], 400);
         }
 
-        $member->consolidators()->sync($request->consolidator_ids);
+        // Get current consolidator IDs before sync
+        $oldIds = $member->consolidators()->pluck('users.id')->toArray();
+        $newIds = $candidateIds->toArray();
+
+        $member->consolidators()->sync($newIds);
+
+        // Log assignments and unassignments
+        $addedIds = array_values(array_diff($newIds, $oldIds));
+        $removedIds = array_values(array_diff($oldIds, $newIds));
+
+        foreach ($addedIds as $consolidatorId) {
+            ChurchMemberConsolidatorLog::create([
+                'church_member_id' => $member->id,
+                'consolidator_id'  => $consolidatorId,
+                'action'           => 'assigned',
+                'changed_by'       => $this->user->id,
+            ]);
+        }
+
+        foreach ($removedIds as $consolidatorId) {
+            ChurchMemberConsolidatorLog::create([
+                'church_member_id' => $member->id,
+                'consolidator_id'  => $consolidatorId,
+                'action'           => 'unassigned',
+                'changed_by'       => $this->user->id,
+            ]);
+        }
 
         $consolidators = $member->consolidators()
             ->select('id', 'name', 'last_name', 'second_last_name', 'email')
@@ -386,6 +335,152 @@ $member = ChurchMember::create($data);
         return response()->json([
             'success' => 'Consolidadores actualizados',
             'data'    => $consolidators,
+        ]);
+    }
+
+    public function consolidatorLogs(Request $request, $id)
+    {
+        $member = $this->findMemberInScope($id);
+
+        $logs = ChurchMemberConsolidatorLog::where('church_member_id', $member->id)
+            ->with('consolidator:id,name,last_name,email')
+            ->with('changer:id,name,last_name')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json($logs);
+    }
+
+    public function consolidatorLogsIndex(Request $request)
+    {
+        $query = ChurchMemberConsolidatorLog::query()
+            ->with('consolidator:id,name,last_name,email')
+            ->with('changer:id,name,last_name')
+            ->with('churchMember:id,name,last_name,org_id');
+
+        // Filter by member's org based on permission
+        if ($this->hasChurchMemberAll()) {
+            $orgIds = $this->user->getOrgsByPermission('church-member-all');
+            if (!empty($orgIds)) {
+                $query->whereHas('churchMember', function ($q) use ($orgIds) {
+                    $q->whereIn('org_id', $orgIds);
+                });
+            }
+        } else {
+            $orgIds = $this->user->getOrgsByPermission('conso-sheet-index');
+            if (!empty($orgIds)) {
+                $query->whereHas('churchMember', function ($q) use ($orgIds) {
+                    $q->whereIn('org_id', $orgIds);
+                });
+            }
+        }
+
+        if ($request->has('filter') && !empty($request->filter)) {
+            $term = '%' . $request->filter . '%';
+            $query->where(function ($q) use ($term) {
+                $q->whereHas('consolidator', function ($q2) use ($term) {
+                    $q2->where('name', 'like', $term)
+                       ->orWhere('last_name', 'like', $term)
+                       ->orWhere('email', 'like', $term);
+                })->orWhereHas('changer', function ($q2) use ($term) {
+                    $q2->where('name', 'like', $term)
+                       ->orWhere('last_name', 'like', $term);
+                })->orWhereHas('churchMember', function ($q2) use ($term) {
+                    $q2->where('name', 'like', $term)
+                       ->orWhere('last_name', 'like', $term);
+                });
+            });
+        }
+
+        if ($request->has('action') && !empty($request->action)) {
+            $query->where('action', $request->action);
+        }
+
+        $page = $request->get('page', 1);
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        $sortBy = $request->get('sortBy', ['id']);
+        $sortDesc = $request->get('sortDesc', [true]);
+
+        if (!empty($sortBy) && is_array($sortBy)) {
+            foreach ($sortBy as $index => $field) {
+                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $query->orderBy($field, $dir);
+            }
+        }
+
+        $total = $query->count();
+        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $logs->items(),
+            'total' => $total,
+        ]);
+    }
+
+    public function trackingLogsIndex(Request $request)
+    {
+        $query = ChurchMemberTrackingLog::query()
+            ->with('churchMember:id,name,last_name,org_id')
+            ->where('created_by', $this->user->id);
+
+        // Filter by member's org based on permission
+        if ($this->hasChurchMemberAll()) {
+            $orgIds = $this->user->getOrgsByPermission('church-member-all');
+            if (!empty($orgIds)) {
+                $query->whereHas('churchMember', function ($q) use ($orgIds) {
+                    $q->whereIn('org_id', $orgIds);
+                });
+            }
+        } else {
+            $orgIds = $this->user->getOrgsByPermission('conso-sheet-index');
+            if (!empty($orgIds)) {
+                $query->whereHas('churchMember', function ($q) use ($orgIds) {
+                    $q->whereIn('org_id', $orgIds);
+                });
+            }
+        }
+
+        if ($request->has('filter') && !empty($request->filter)) {
+            $term = '%' . $request->filter . '%';
+            $query->where(function ($q) use ($term) {
+                $q->whereHas('churchMember', function ($q2) use ($term) {
+                    $q2->where('name', 'like', $term)
+                       ->orWhere('last_name', 'like', $term);
+                })->orWhere('medium', 'like', $term)
+                  ->orWhere('description', 'like', $term);
+            });
+        }
+
+        if ($request->has('medium') && !empty($request->medium)) {
+            $query->where('medium', $request->medium);
+        }
+
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $query->where('contact_datetime', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $query->where('contact_datetime', '<=', $request->date_to . ' 23:59:59');
+        }
+
+        $page = $request->get('page', 1);
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        $sortBy = $request->get('sortBy', ['contact_datetime']);
+        $sortDesc = $request->get('sortDesc', [true]);
+
+        if (!empty($sortBy) && is_array($sortBy)) {
+            foreach ($sortBy as $index => $field) {
+                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $query->orderBy($field, $dir);
+            }
+        }
+
+        $total = $query->count();
+        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $logs->items(),
+            'total' => $total,
         ]);
     }
 

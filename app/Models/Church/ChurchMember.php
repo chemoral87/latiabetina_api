@@ -80,4 +80,9 @@ class ChurchMember extends Model implements AuditableContract
     {
         return $this->hasMany(ChurchMemberMedal::class);
     }
+
+    public function consolidatorLogs()
+    {
+        return $this->hasMany(ChurchMemberConsolidatorLog::class);
+    }
 }
