@@ -83,8 +83,28 @@ class ChurchMemberController extends Controller
                ->orderByDesc('church_member_consolidator_logs.id')
                ->limit(1),
        ]);
-       $query->with('creator:id,name,last_name');
-        return response()->json($query->orderByDesc('last_contacted')->get());
+        $query->with('creator:id,name,last_name');
+
+        $sortBy = $request->get('sortBy');
+        $sortDesc = $request->get('sortDesc');
+
+        $allowedSortColumns = ['id', 'name', 'last_name', 'cellphone', 'status', 'org_id', 'last_contacted', 'created_at'];
+
+        if (!empty($sortBy)) {
+            $columns = is_array($sortBy) ? $sortBy : [$sortBy];
+            $directions = (!empty($sortDesc) && is_array($sortDesc)) ? $sortDesc : [];
+            foreach ($columns as $index => $column) {
+                if (!is_string($column) || !in_array($column, $allowedSortColumns)) {
+                    continue;
+                }
+                $dir = (isset($directions[$index]) && filter_var($directions[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $query->orderBy($column, $dir);
+            }
+        } else {
+            $query->orderByDesc('last_contacted');
+        }
+
+        return response()->json($query->get());
     }
 
     public function show($id)

@@ -17,7 +17,7 @@ class PermissionController extends Controller {
 
     if ($sortBy) {
       foreach ($sortBy as $index => $column) {
-        $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
+        $sortDirection = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'DESC' : 'ASC';
         $query = $query->orderBy($column, $sortDirection);
       }
     } else {

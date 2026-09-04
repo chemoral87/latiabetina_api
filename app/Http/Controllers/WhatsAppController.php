@@ -61,17 +61,30 @@ class WhatsAppController extends Controller
      * Return a paginated list of WhatsappMessageLogs with optional filters.
      *
      * Query params:
-     *   sender   - filter by sender (partial match)
-     *   receiver - filter by receiver (partial match)
-     *   success  - filter by success (0 | 1)
-     *   per_page - items per page (default 15)
-     *   page     - page number
+     *   sender       - filter by sender (partial match)
+     *   receiver     - filter by receiver (partial match)
+     *   success      - filter by success (0 | 1)
+     *   itemsPerPage - items per page (default 15)
+     *   page         - page number
+     *   sortBy[]     - column to sort by (default created_at)
+     *   sortDesc[]   - direction (true = desc, false = asc)
      */
     public function logs(Request $request)
     {
         $query = WhatsappMessageLog::query()
-            ->with('creator:id,name,email')
-            ->orderByDesc('created_at');
+            ->with('creator:id,name,email');
+
+        $sortBy = $request->get('sortBy');
+        $sortDesc = $request->get('sortDesc');
+
+        if ($sortBy) {
+            foreach ($sortBy as $index => $column) {
+                $sortDirection = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'DESC' : 'ASC';
+                $query->orderBy($column, $sortDirection);
+            }
+        } else {
+            $query->orderBy('created_at', 'DESC');
+        }
 
         if ($request->filled('sender')) {
             $query->where('sender', 'like', '%' . $request->sender . '%');
@@ -85,8 +98,8 @@ class WhatsAppController extends Controller
             $query->where('success', (bool) $request->success);
         }
 
-        $perPage = (int) $request->get('per_page', 15);
-        $perPage = min($perPage, 100); // cap at 100
+        $perPage = (int) $request->get('itemsPerPage', 15);
+        $perPage = min($perPage, 100);
 
         return response()->json($query->paginate($perPage));
     }
