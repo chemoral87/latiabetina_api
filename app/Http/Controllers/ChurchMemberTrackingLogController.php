@@ -79,6 +79,10 @@ class ChurchMemberTrackingLogController extends Controller
 
         $log = $member->trackingLogs()->findOrFail($logId);
 
+        if ((int) $log->created_by !== (int) $this->user->id) {
+            return response()->json(['error' => 'No tienes permiso para editar esta interacción'], 403);
+        }
+
         $request->validate([
             'contact_datetime' => 'sometimes|date',
             'medium'           => 'sometimes|in:whatsapp,llamada,presencial,sms',
@@ -99,6 +103,11 @@ class ChurchMemberTrackingLogController extends Controller
         $member = $this->findMemberInScope($id);
 
         $log = $member->trackingLogs()->findOrFail($logId);
+
+        if ((int) $log->created_by !== (int) $this->user->id) {
+            return response()->json(['error' => 'No tienes permiso para eliminar esta interacción'], 403);
+        }
+
         $log->delete();
 
         return response()->json(['success' => 'Interacción eliminada exitosamente']);
