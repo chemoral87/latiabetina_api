@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Models\Church\ChurchMember;
 use App\Models\Church\ChurchMemberTrackingLog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -14,7 +15,8 @@ class ChurchMemberTrackingLogController extends Controller
 
     protected $user;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->user = JWTAuth::user();
     }
 
@@ -29,7 +31,7 @@ class ChurchMemberTrackingLogController extends Controller
         $sortBy = $request->get('sortBy', ['contact_datetime']);
         $sortDesc = $request->get('sortDesc', ['true']);
 
-        if (!empty($sortBy) && is_array($sortBy)) {
+        if (! empty($sortBy) && is_array($sortBy)) {
             foreach ($sortBy as $index => $field) {
                 $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
                 $query->orderBy($field, $dir);
@@ -50,23 +52,117 @@ class ChurchMemberTrackingLogController extends Controller
         ]);
     }
 
+    public function allTrackingLogsSummary(Request $request)
+    {
+        $request->validate([
+            'year_month' => 'nullable|date_format:Y-m',
+        ]);
+
+        $orgIds = $this->user->getOrgsByPermission('church-member-tracking-logs-all');
+        $query = ChurchMemberTrackingLog::query()
+            ->with(['creator:id,name,last_name,email']);
+
+        if (empty($orgIds)) {
+            $query->whereRaw('1 = 0');
+        } else {
+            $query->whereHas('churchMember', function ($query) use ($orgIds) {
+                $query->whereIn('org_id', $orgIds);
+            });
+        }
+
+        if ($request->filled('year_month')) {
+            $yearMonth = $request->input('year_month');
+            $query->whereYear('contact_datetime', Carbon::parse($yearMonth)->year)
+                ->whereMonth('contact_datetime', Carbon::parse($yearMonth)->month);
+        }
+
+        $summary = $query->join('church_members', 'church_members.id', '=', 'church_member_tracking_logs.church_member_id')
+            ->select('church_member_tracking_logs.created_by')
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('COUNT(DISTINCT church_member_tracking_logs.church_member_id) as distinct_members')
+            ->selectRaw("COUNT(DISTINCT CASE WHEN church_members.status = 'ACTIVO' THEN church_member_tracking_logs.church_member_id END) as active_members")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN church_members.status <> 'ACTIVO' THEN church_member_tracking_logs.church_member_id END) as inactive_members")
+            ->groupBy('church_member_tracking_logs.created_by')
+            ->orderByDesc('total')
+            ->get();
+
+        return response()->json($summary);
+    }
+
+    public function allTrackingLogs(Request $request)
+    {
+        $request->validate([
+            'year_month' => 'nullable|date_format:Y-m',
+            'consolidator_id' => 'required|integer',
+        ]);
+
+        $orgIds = $this->user->getOrgsByPermission('church-member-tracking-logs-all');
+        $query = ChurchMemberTrackingLog::query()
+            ->with([
+                'churchMember:id,name,last_name,org_id',
+                'creator:id,name,last_name',
+            ]);
+
+        if (empty($orgIds)) {
+            $query->whereRaw('1 = 0');
+        } else {
+            $query->whereHas('churchMember', function ($query) use ($orgIds) {
+                $query->whereIn('org_id', $orgIds);
+            });
+        }
+
+        if ($request->filled('year_month')) {
+            $yearMonth = $request->input('year_month');
+            $query->whereYear('contact_datetime', Carbon::parse($yearMonth)->year)
+                ->whereMonth('contact_datetime', Carbon::parse($yearMonth)->month);
+        }
+
+        $query->where('created_by', $request->integer('consolidator_id'));
+
+        $total = (clone $query)->count();
+        $page = $request->integer('page', 1);
+        $itemsPerPage = $request->integer('itemsPerPage', 10);
+        $sortBy = $request->input('sortBy', ['contact_datetime']);
+        $sortDesc = $request->input('sortDesc', [true]);
+        $sortableFields = ['contact_datetime', 'created_at', 'medium'];
+
+        if (is_array($sortBy)) {
+            foreach ($sortBy as $index => $field) {
+                if (! in_array($field, $sortableFields, true)) {
+                    continue;
+                }
+                $direction = isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)
+                    ? 'desc'
+                    : 'asc';
+                $query->orderBy($field, $direction);
+            }
+        }
+
+        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $logs->items(),
+            'total' => $total,
+        ]);
+    }
+
     public function storeTrackingLog(Request $request, $id)
     {
         $member = $this->findMemberInScope($id);
 
         $request->validate([
             'contact_datetime' => 'required|date',
-            'medium'           => 'required|in:whatsapp,llamada,presencial,sms',
-            'classification'   => 'nullable|in:CONTESTA,NO CONTESTA',
-            'description'      => 'nullable|string|max:2000',
+            'medium' => 'required|in:whatsapp,llamada,presencial,sms',
+            'classification' => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description' => 'nullable|string|max:2000',
         ]);
 
         $log = $member->trackingLogs()->create([
             'contact_datetime' => $request->contact_datetime,
-            'medium'           => $request->medium,
-            'classification'   => $request->classification,
-            'description'      => $request->description,
-            'created_by'       => $this->user->id,
+            'medium' => $request->medium,
+            'classification' => $request->classification,
+            'description' => $request->description,
+            'created_by' => $this->user->id,
         ]);
 
         return response()->json([
@@ -87,16 +183,16 @@ class ChurchMemberTrackingLogController extends Controller
 
         $request->validate([
             'contact_datetime' => 'sometimes|date',
-            'medium'           => 'sometimes|in:whatsapp,llamada,presencial,sms',
-            'classification'   => 'nullable|in:CONTESTA,NO CONTESTA',
-            'description'      => 'nullable|string|max:2000',
+            'medium' => 'sometimes|in:whatsapp,llamada,presencial,sms',
+            'classification' => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description' => 'nullable|string|max:2000',
         ]);
 
         $log->update($request->only(['contact_datetime', 'medium', 'classification', 'description']));
 
         return response()->json([
             'success' => 'Interacción actualizada exitosamente',
-            'data'    => $log->load('creator'),
+            'data' => $log->load('creator'),
         ]);
     }
 
@@ -124,12 +220,13 @@ class ChurchMemberTrackingLogController extends Controller
         } else {
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
         }
+
         return $query->findOrFail($id);
     }
 
     private function hasChurchMemberAll(): bool
     {
-        if (!$this->user) {
+        if (! $this->user) {
             return false;
         }
         try {
@@ -139,15 +236,17 @@ class ChurchMemberTrackingLogController extends Controller
         } catch (\Throwable $e) {
             // fall through to getOrgsByPermission
         }
-        return !empty($this->user->getOrgsByPermission('church-member-all'));
+
+        return ! empty($this->user->getOrgsByPermission('church-member-all'));
     }
 
     private function applyChurchMemberAllScope($query)
     {
         $orgIds = $this->user->getOrgsByPermission('church-member-all');
-        if (!empty($orgIds)) {
+        if (! empty($orgIds)) {
             return $query->whereIn('org_id', $orgIds);
         }
+
         // No organizations with this permission - return no results
         return $query->whereRaw('1 = 0');
     }
