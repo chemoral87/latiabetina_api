@@ -22,18 +22,20 @@ class ChurchMemberTrackingLogController extends Controller
     {
         $member = $this->findMemberInScope($id);
 
-        $query = $member->trackingLogs()->with(['creator', 'churchMember'])->orderByDesc('contact_datetime')->orderByDesc('id');
+        $query = $member->trackingLogs()->with(['creator', 'churchMember']);
 
         $page = $request->get('page', 1);
         $itemsPerPage = $request->get('itemsPerPage', 10);
         $sortBy = $request->get('sortBy', ['contact_datetime']);
-        $sortDesc = $request->get('sortDesc', [true]);
+        $sortDesc = $request->get('sortDesc', ['true']);
 
         if (!empty($sortBy) && is_array($sortBy)) {
             foreach ($sortBy as $index => $field) {
                 $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
                 $query->orderBy($field, $dir);
             }
+        } else {
+            $query->orderByDesc('contact_datetime')->orderByDesc('id');
         }
 
         $total = $query->count();
