@@ -199,31 +199,81 @@ $member = ChurchMember::create($data);
 
     public function update(Request $request, $id)
     {
-        $member = ChurchMember::findOrFail($id);
+        $logCtx = ['member_id' => $id, 'user_id' => $this->user?->id];
+        Log::info('ChurchMember update started', $logCtx + ['payload' => $this->summarizePayload($request->all())]);
 
-        $data = $request->validate([
-            'name'               => 'required|string|max:255',
-            'last_name'          => 'required|string|max:255',
-            'second_last_name'   => 'nullable|string|max:255',
-            'cellphone'          => 'nullable|string|max:50',
-            'years_old'          => 'nullable|integer|min:0|max:150',
-            'number_of_children' => 'nullable|integer|min:0',
-            'marriage_status'    => 'nullable|string|max:50',
-            'address'            => 'nullable|string|max:500',
-            'url_image'          => 'nullable|string',
-        ]);
+        try {
+            $member = ChurchMember::findOrFail($id);
+            Log::info('ChurchMember update: member found', $logCtx + ['org_id' => $member->org_id]);
 
-        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
-            $path = "ORG-{$member->org_id}{$this->path}";
-            $treatedImage = treatImage($request->url_image, 95);
-            $data['url_image'] = saveS3Blob($treatedImage, $path, $member->url_image);
+            $data = $request->validate([
+                'name'               => 'required|string|max:255',
+                'last_name'          => 'required|string|max:255',
+                'second_last_name'   => 'nullable|string|max:255',
+                'cellphone'          => 'nullable|string|max:50',
+                'years_old'          => 'nullable|integer|min:0|max:150',
+                'number_of_children' => 'nullable|integer|min:0',
+                'marriage_status'    => 'nullable|string|max:50',
+                'address'            => 'nullable|string|max:500',
+                'url_image'          => 'nullable|string',
+            ]);
+            Log::info('ChurchMember update: validation passed', $logCtx);
+
+            if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+                Log::info('ChurchMember update: processing image', $logCtx + ['data_uri_len' => strlen($request->url_image)]);
+                try {
+                    $path = "ORG-{$member->org_id}{$this->path}";
+                    $treatedImage = treatImage($request->url_image, 95);
+                    $data['url_image'] = saveS3Blob($treatedImage, $path, $member->url_image);
+                    if ($data['url_image'] === null) {
+                        // S3 upload failed (saveS3Blob already logged): keep the
+                        // existing photo instead of wiping it with null.
+                        unset($data['url_image']);
+                        Log::warning('ChurchMember update: S3 upload returned null, keeping existing image', $logCtx);
+                    } else {
+                        Log::info('ChurchMember update: image uploaded', $logCtx + ['s3_key' => $data['url_image']]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('ChurchMember update: image processing failed', $logCtx + [
+                        'exception' => get_class($e),
+                        'message'   => $e->getMessage(),
+                        'at'        => $e->getFile() . ':' . $e->getLine(),
+                    ]);
+                    throw $e;
+                }
+            }
+
+            $member->update($data);
+            Log::info('ChurchMember update: row updated', $logCtx);
+
+            try {
+                $result = $member->append('url_image_s3');
+            } catch (\Throwable $e) {
+                Log::error('ChurchMember update: url_image_s3 accessor failed', $logCtx + [
+                    'exception' => get_class($e),
+                    'message'   => $e->getMessage(),
+                    'at'        => $e->getFile() . ':' . $e->getLine(),
+                    'url_image' => is_string($member->url_image) ? substr($member->url_image, 0, 120) : gettype($member->url_image),
+                ]);
+                throw $e;
+            }
+
+            return response()->json([
+                'success' => __('messa.church-member_update'),
+                'data' => $result,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('ChurchMember update: validation failed', $logCtx + ['errors' => $e->errors()]);
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('ChurchMember update: failed', $logCtx + [
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+                'at'        => $e->getFile() . ':' . $e->getLine(),
+                'status'    => method_exists($e, 'getStatusCode') ? $e->getStatusCode() : null,
+            ]);
+            throw $e;
         }
-
-        $member->update($data);
-        return response()->json([
-            'success' => __('messa.church-member_update'),
-            'data' => $member->append('url_image_s3'),
-        ]);
     }
 
     public function delete($id)
@@ -534,6 +584,26 @@ $member = ChurchMember::create($data);
         ]);
 
         return response()->json($medal->load('creator'), 201);
+    }
+
+    /**
+     * Resumen del payload para logs: nunca vuelca el base64 completo de la imagen.
+     */
+    private function summarizePayload(array $data): array
+    {
+        $summary = [];
+        foreach ($data as $key => $value) {
+            if ($key === 'url_image' && is_string($value)) {
+                $summary[$key] = str_starts_with($value, 'data:')
+                    ? 'data-uri len=' . strlen($value)
+                    : 'ref len=' . strlen($value) . ' prefix=' . substr($value, 0, 60);
+            } elseif (is_string($value) && strlen($value) > 200) {
+                $summary[$key] = substr($value, 0, 200) . '... (len=' . strlen($value) . ')';
+            } else {
+                $summary[$key] = $value;
+            }
+        }
+        return $summary;
     }
 
     private function findMemberInScope($id): ChurchMember
