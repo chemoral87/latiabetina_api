@@ -200,11 +200,9 @@ $member = ChurchMember::create($data);
     public function update(Request $request, $id)
     {
         $logCtx = ['member_id' => $id, 'user_id' => $this->user?->id];
-        Log::info('ChurchMember update started', $logCtx + ['payload' => $this->summarizePayload($request->all())]);
 
         try {
             $member = ChurchMember::findOrFail($id);
-            Log::info('ChurchMember update: member found', $logCtx + ['org_id' => $member->org_id]);
 
             $data = $request->validate([
                 'name'               => 'required|string|max:255',
@@ -217,10 +215,8 @@ $member = ChurchMember::create($data);
                 'address'            => 'nullable|string|max:500',
                 'url_image'          => 'nullable|string',
             ]);
-            Log::info('ChurchMember update: validation passed', $logCtx);
 
             if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
-                Log::info('ChurchMember update: processing image', $logCtx + ['data_uri_len' => strlen($request->url_image)]);
                 try {
                     $path = "ORG-{$member->org_id}{$this->path}";
                     $treatedImage = treatImage($request->url_image, 95);
@@ -230,8 +226,6 @@ $member = ChurchMember::create($data);
                         // existing photo instead of wiping it with null.
                         unset($data['url_image']);
                         Log::warning('ChurchMember update: S3 upload returned null, keeping existing image', $logCtx);
-                    } else {
-                        Log::info('ChurchMember update: image uploaded', $logCtx + ['s3_key' => $data['url_image']]);
                     }
                 } catch (\Throwable $e) {
                     Log::error('ChurchMember update: image processing failed', $logCtx + [
@@ -244,7 +238,6 @@ $member = ChurchMember::create($data);
             }
 
             $member->update($data);
-            Log::info('ChurchMember update: row updated', $logCtx);
 
             try {
                 $result = $member->append('url_image_s3');
@@ -263,7 +256,6 @@ $member = ChurchMember::create($data);
                 'data' => $result,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::warning('ChurchMember update: validation failed', $logCtx + ['errors' => $e->errors()]);
             throw $e;
         } catch (\Throwable $e) {
             Log::error('ChurchMember update: failed', $logCtx + [
