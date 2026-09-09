@@ -7,6 +7,7 @@ use App\Http\Controllers\AuditoriumEventSeatLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChurchEventController;
 use App\Http\Controllers\ChurchMemberController;
+use App\Http\Controllers\ChurchMemberMedalController;
 use App\Http\Controllers\ChurchMemberTrackingLogController;
 use App\Http\Controllers\ConsoSheetController;
 use App\Http\Controllers\ExpenseCategoriesController;
@@ -258,10 +259,13 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/{id}/consolidators', 'consolidators')->middleware('permission_org:church-member-consolidator-assign');
         Route::put('/{id}/consolidators', 'syncConsolidators')->middleware('permission_org:church-member-consolidator-assign');
         Route::get('/{id}/consolidator-logs', 'consolidatorLogs')->middleware('permission_org:church-member-index');
-        Route::get('/{id}/medals', 'medals')->middleware('permission_org:conso-sheet-index');
-        Route::post('/{id}/medals', 'storeMedal')->middleware('permission_org:conso-sheet-index');
-        Route::delete('/{id}/medals/{medalId}', 'destroyMedal')->middleware('permission_org:conso-sheet-index');
-        Route::get('/{id}/medal-logs', 'medalLogs')->middleware('permission_org:conso-sheet-index');
+    });
+
+    Route::prefix('church-member')->controller(ChurchMemberMedalController::class)->group(function () {
+        Route::get('/{id}/medals', 'index')->middleware('permission_org:church-member-medal-index');
+        Route::post('/{id}/medals', 'store')->middleware('permission_org:church-member-medal-create');
+        Route::delete('/{id}/medals/{medalId}', 'destroy')->middleware('permission_org:church-member-medal-delete');
+        Route::get('/{id}/medal-logs', 'logs')->middleware('permission_org:church-member-medal-index');
     });
 
     Route::prefix('church-member')->controller(ChurchMemberTrackingLogController::class)->group(function () {
