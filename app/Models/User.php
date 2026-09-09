@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -12,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject, AuditableContract {
+final class User extends Authenticatable implements JWTSubject, AuditableContract {
   use HasApiTokens, HasFactory, Notifiable, HasRoles;
   use Auditable;
   /**
@@ -34,11 +38,11 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
     'avatar',
   ];
 
-  public function getJWTIdentifier() {
+  public function getJWTIdentifier(): int {
     return $this->getKey();
   }
 
-  public function getJWTCustomClaims() {
+  public function getJWTCustomClaims(): array {
     return [];
   }
 
@@ -62,11 +66,11 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
     'last_login_at' => 'datetime',
   ];
 
-  public function profiles() {
+  public function profiles(): HasMany {
     return $this->hasMany(Profile::class);
   }
 
-  public function lifeGroupsAsLeader() {
+  public function lifeGroupsAsLeader(): BelongsToMany {
     return $this->belongsToMany(
       \App\Models\LifeGroup\LifeGroup::class,
       'life_group_leaders',
@@ -81,32 +85,45 @@ class User extends Authenticatable implements JWTSubject, AuditableContract {
    * @param string|null $permission
    * @return array
    */
-  public function getOrgsByPermission($permission = null) {
-    $permissions_orgs = [];
-    foreach ($this->profiles as $profile) {
-      foreach ($profile->roles as $role) {
-        foreach ($role->permissions as $perm) {
-          $permissions_orgs[$perm->name][$profile->org_id] = true;
+    public function getOrgsByPermission(?string $permission = null): array
+    {
+        $all = cache()->remember(
+            "user:{$this->id}:org_permissions",
+            now()->addMinutes(5),
+            fn () => $this->computeOrgPermissions()
+        );
+
+        if ($permission) {
+            return $all[$permission] ?? [];
         }
-      }
-      foreach ($profile->permissions as $perm) {
-        $permissions_orgs[$perm->name][$profile->org_id] = true;
-      }
+
+        return $all;
     }
-    // Convert to array of org_ids
-    foreach ($permissions_orgs as &$orgIds) {
-      $orgIds = array_keys($orgIds);
+
+    private function computeOrgPermissions(): array
+    {
+        $permissionsOrgs = [];
+        foreach ($this->profiles as $profile) {
+            foreach ($profile->roles as $role) {
+                foreach ($role->permissions as $perm) {
+                    $permissionsOrgs[$perm->name][$profile->org_id] = true;
+                }
+            }
+            foreach ($profile->permissions as $perm) {
+                $permissionsOrgs[$perm->name][$profile->org_id] = true;
+            }
+        }
+        foreach ($permissionsOrgs as &$orgIds) {
+            $orgIds = array_keys($orgIds);
+        }
+        unset($orgIds);
+
+        return $permissionsOrgs;
     }
-    unset($orgIds);
-    if ($permission) {
-      return $permissions_orgs[$permission] ?? [];
-    }
-    return $permissions_orgs;
-  }
 
   // No Auditing of password
 
-  public function getAuditIgnore() {
+  public function getAuditIgnore(): array {
     return ['password'];
   }
 }

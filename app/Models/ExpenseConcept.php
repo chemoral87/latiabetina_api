@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class ExpenseConcept extends Model
+final class ExpenseConcept extends Model
 {
     use HasFactory;
 
@@ -16,7 +19,7 @@ class ExpenseConcept extends Model
         'updated_by',
     ];
 
-    public function categories() {
+    public function categories(): BelongsToMany {
         return $this->belongsToMany(ExpenseCategory::class, 'expense_category_concept');
     }
 }

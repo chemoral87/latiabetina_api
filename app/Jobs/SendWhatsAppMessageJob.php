@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -234,6 +236,14 @@ class SendWhatsAppMessageJob implements ShouldQueue
         }
 
         // Wait a random amount of time before finishing to ensure a gap between jobs on this worker
-        sleep(rand(10, 20));
+        $this->release(rand(10, 20));
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        Log::critical('WhatsApp job permanently failed', [
+            'phone' => $this->phone,
+            'error' => $e->getMessage(),
+        ]);
     }
 }

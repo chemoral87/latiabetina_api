@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Expense extends Model
+final class Expense extends Model
 {
     use HasFactory;
 
@@ -21,15 +24,15 @@ class Expense extends Model
         'updated_by',
     ];
 
-    public function concept() {
+    public function concept(): BelongsTo {
         return $this->belongsTo(ExpenseConcept::class);
     }
 
-    public function ticket() {
+    public function ticket(): BelongsTo {
         return $this->belongsTo(ExpenseTicket::class);
     }
 
-    public function creator() {
+    public function creator(): BelongsTo {
         return $this->belongsTo(User::class, 'created_by');
     }
 }

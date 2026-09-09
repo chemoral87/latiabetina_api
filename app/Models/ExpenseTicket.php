@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ExpenseTicket extends Model {
+final class ExpenseTicket extends Model {
   use HasFactory;
 
   protected $fillable = [
@@ -17,11 +21,11 @@ class ExpenseTicket extends Model {
     'updated_by',
   ];
 
-  public function images() {
+  public function images(): HasMany {
     return $this->hasMany(ExpenseTicketImage::class);
   }
 
-  public function store() {
+  public function store(): BelongsTo {
     return $this->belongsTo(Store::class);
   }
 }

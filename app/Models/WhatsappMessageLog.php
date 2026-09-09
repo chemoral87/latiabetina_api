@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class WhatsappMessageLog extends Model
+final class WhatsappMessageLog extends Model
 {
     use HasFactory;
 
@@ -28,7 +31,7 @@ class WhatsappMessageLog extends Model
         'sent_at' => 'datetime',
     ];
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class OrganizationConfig extends Model {
+final class OrganizationConfig extends Model {
   use HasFactory;
 
   // append config name
@@ -20,15 +23,15 @@ class OrganizationConfig extends Model {
   // Define hidden attributes
   protected $hidden = ['config'];
 
-  public function getKeyAttribute() {
+  public function getKeyAttribute(): string {
     return $this->config->key;
   }
 
-  public function config() {
+  public function config(): BelongsTo {
     return $this->belongsTo(Config::class, 'config_id', 'id');
   }
 
-  public function organization() {
+  public function organization(): BelongsTo {
     return $this->belongsTo(Organization::class, 'org_id', 'id');
   }
 }

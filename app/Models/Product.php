@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Product extends Model
+final class Product extends Model
 {
     use SoftDeletes;
 
@@ -38,17 +41,17 @@ class Product extends Model
 
     protected $appends = ['image_s3'];
 
-    public function organization()
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'org_id');
     }
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function getImageS3Attribute()
+    public function getImageS3Attribute(): ?string
     {
         return permanentUrlS3($this->image);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Church;
 
 use App\Models\ConsoSheet;
@@ -7,6 +9,9 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
@@ -41,52 +46,52 @@ class ChurchMember extends Model implements AuditableContract
         ];
     }
 
-    public function getUrlImageS3Attribute() {
+    public function getUrlImageS3Attribute(): ?string {
         $path = is_string($this->url_image) ? $this->url_image : null;
         return temporaryUrlS3($path);
     }
 
-    public function organization()
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function consoSheet()
+    public function consoSheet(): BelongsTo
     {
         return $this->belongsTo(ConsoSheet::class);
     }
 
-    public function consolidators()
+    public function consolidators(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'church_member_consolidator', 'church_member_id', 'consolidator_id')->withTimestamps();
     }
 
-    public function trackingLogs()
+    public function trackingLogs(): HasMany
     {
         return $this->hasMany(ChurchMemberTrackingLog::class);
     }
 
-    public function statusLogs()
+    public function statusLogs(): HasMany
     {
         return $this->hasMany(ChurchMemberStatusLog::class);
     }
 
-    public function medals()
+    public function medals(): HasMany
     {
         return $this->hasMany(ChurchMemberMedal::class);
     }
 
-    public function medalLogs()
+    public function medalLogs(): HasMany
     {
         return $this->hasMany(ChurchMemberMedalLog::class);
     }
 
-    public function consolidatorLogs()
+    public function consolidatorLogs(): HasMany
     {
         return $this->hasMany(ChurchMemberConsolidatorLog::class);
     }

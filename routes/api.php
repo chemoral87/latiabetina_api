@@ -45,7 +45,7 @@ Route::get('test', function () {
 // Public endpoint for creating testimonies (no API middleware
 Route::group(['middleware' => ['api']], function () {
     Route::prefix('auth')->controller(AuthController::class)->group(function () {
-        Route::post('login', 'login');
+        Route::post('login', 'login')->middleware('throttle:10,1');
         Route::post('logout', 'logout');
         Route::post('refresh', 'refresh');
         Route::post('user', 'me');

@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Song extends Model {
+final class Song extends Model {
   use HasFactory;
 
   protected $fillable = [
@@ -22,11 +25,11 @@ class Song extends Model {
     'content' => 'array',
   ];
 
-  public function organization() {
+  public function organization(): BelongsTo {
     return $this->belongsTo(Organization::class, 'org_id');
   }
 
-  public function creator() {
+  public function creator(): BelongsTo {
     return $this->belongsTo(User::class, 'created_by');
   }
 }

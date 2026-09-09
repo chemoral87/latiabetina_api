@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Models\OrganizationConfig;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Organization extends Model {
+final class Organization extends Model {
   use HasFactory;
   protected $fillable = [
     'name',
@@ -14,7 +17,7 @@ class Organization extends Model {
     'description',
   ];
 
-  public function config() {
+  public function config(): HasMany {
     return $this->hasMany(OrganizationConfig::class, 'org_id', 'id');
   }
 }

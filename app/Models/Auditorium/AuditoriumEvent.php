@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Auditorium;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditoriumEvent extends Model {
   protected $fillable = [
@@ -13,7 +16,7 @@ class AuditoriumEvent extends Model {
     'org_id',
   ];
 
-  public function auditorium() {
+  public function auditorium(): BelongsTo {
     return $this->belongsTo(Auditorium::class);
   }
 }

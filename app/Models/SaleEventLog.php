@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SaleEventLog extends Model
+final class SaleEventLog extends Model
 {
     protected $table = 'sale_event_logs';
 
@@ -24,7 +27,7 @@ class SaleEventLog extends Model
         'broadcast_data' => 'json',
     ];
 
-    public function sale()
+    public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class, 'sale_id');
     }

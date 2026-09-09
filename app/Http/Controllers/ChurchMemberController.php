@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
@@ -84,7 +86,8 @@ class ChurchMemberController extends Controller
                ->orderByDesc('church_member_consolidator_logs.id')
                ->limit(1),
        ]);
-        $query->with('creator:id,name,last_name');
+        $query->with('creator:id,name,last_name')
+            ->with('consolidators:id,name,last_name');
 
         $sortBy = $request->get('sortBy');
         $sortDesc = $request->get('sortDesc');
@@ -127,22 +130,9 @@ class ChurchMemberController extends Controller
         return response()->json($member);
     }
 
-    public function create(Request $request)
+    public function create(\App\Http\Requests\StoreChurchMemberRequest $request)
     {
-        $data = $request->validate([
-            'org_id'              => 'required|exists:organizations,id',
-            'conso_sheet_id'      => 'sometimes|nullable|exists:conso_sheets,id',
-            'name'                => 'required|string|max:255',
-            'last_name'           => 'required|string|max:255',
-            'second_last_name'    => 'nullable|string|max:255',
-            'cellphone'           => 'nullable|string|max:50',
-            'years_old'           => 'nullable|integer|min:0|max:150',
-            'number_of_children'  => 'nullable|integer|min:0',
-            'marriage_status'     => 'nullable|string|max:50',
-            'address'             => 'nullable|string|max:500',
-            'url_image'           => 'nullable|string',
-            'status'              => 'nullable|in:ACTIVO,NO CONTESTA,NO MOLESTAR,VISITA',
-        ]);
+        $data = $request->validated();
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
             $path = "ORG-{$request->org_id}{$this->path}";
@@ -198,24 +188,14 @@ $member = ChurchMember::create($data);
         ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(\App\Http\Requests\UpdateChurchMemberRequest $request, $id)
     {
         $logCtx = ['member_id' => $id, 'user_id' => $this->user?->id];
 
         try {
             $member = ChurchMember::findOrFail($id);
 
-            $data = $request->validate([
-                'name'               => 'required|string|max:255',
-                'last_name'          => 'required|string|max:255',
-                'second_last_name'   => 'nullable|string|max:255',
-                'cellphone'          => 'nullable|string|max:50',
-                'years_old'          => 'nullable|integer|min:0|max:150',
-                'number_of_children' => 'nullable|integer|min:0',
-                'marriage_status'    => 'nullable|string|max:50',
-                'address'            => 'nullable|string|max:500',
-                'url_image'          => 'nullable|string',
-            ]);
+            $data = $request->validated();
 
             if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
                 try {

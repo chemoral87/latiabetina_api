@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Sale extends Model
+final class Sale extends Model
 {
     protected $table = 'pos_sales';
 
@@ -36,17 +40,17 @@ class Sale extends Model
     public const STATUS_CANCELLED = 'CAN';
     public const STATUS_REFUNDED  = 'REF';
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class, 'sale_id');
     }
 
-    public function organization()
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'org_id');
     }
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Traits\HasRoles;
 
-class Profile extends Model {
+final class Profile extends Model {
   protected $guard_name = 'web';
   use HasFactory, HasRoles;
 
@@ -19,19 +22,19 @@ class Profile extends Model {
   // not append organization
   protected $hidden = ['organization'];
 
-  public function user() {
+  public function user(): BelongsTo {
     return $this->belongsTo(User::class);
   }
 
-  public function organization() {
+  public function organization(): BelongsTo {
     return $this->belongsTo(Organization::class, 'org_id');
   }
 
-  public function getOrganizationNameAttribute() {
+  public function getOrganizationNameAttribute(): string {
     return $this->organization->name;
   }
 
-  public function getOrganizationShortCodeAttribute() {
+  public function getOrganizationShortCodeAttribute(): string {
     return $this->organization->short_code;
   }
 
