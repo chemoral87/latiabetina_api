@@ -135,9 +135,23 @@ class ChurchMemberController extends Controller
         $data = $request->validated();
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
-            $path = "ORG-{$request->org_id}{$this->path}";
-            $treatedImage = treatImage($request->url_image, 95);
-            $data['url_image'] = saveS3Blob($treatedImage, $path);
+            try {
+                $path = "ORG-{$request->org_id}{$this->path}";
+                $treatedImage = treatImage($request->url_image, 95);
+                $data['url_image'] = saveS3Blob($treatedImage, $path);
+                Log::info('ChurchMember create: image uploaded', [
+                    'org_id' => $request->org_id,
+                    'path'   => $data['url_image'],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('ChurchMember create: image processing failed', [
+                    'org_id'     => $request->org_id,
+                    'exception'  => get_class($e),
+                    'message'    => $e->getMessage(),
+                    'at'         => $e->getFile() . ':' . $e->getLine(),
+                ]);
+                unset($data['url_image']);
+            }
         }
 
         // Set default status if not provided

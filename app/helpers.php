@@ -113,10 +113,21 @@ function temporaryUrlS3($path) {
     $cacheTtl = 60 * 24 * 7; // 7 days in minutes
     // Check if the temporary URL is already cached
     if (Cache::has($cacheKey)) {
-      return Cache::get($cacheKey);
+      $cached = Cache::get($cacheKey);
+      \Illuminate\Support\Facades\Log::info('temporaryUrlS3: cache hit', [
+        'path' => $path,
+        'cache_key' => $cacheKey,
+        'url_prefix' => substr($cached ?? '', 0, 80),
+      ]);
+      return $cached;
     }
     $temporaryUrl = Storage::disk('s3')->temporaryUrl($path, now()->addDays(7));
     Cache::put($cacheKey, $temporaryUrl, $cacheTtl);
+    \Illuminate\Support\Facades\Log::info('temporaryUrlS3: new URL generated', [
+      'path' => $path,
+      'cache_key' => $cacheKey,
+      'url_prefix' => substr($temporaryUrl ?? '', 0, 80),
+    ]);
     return $temporaryUrl;
   }
   return "";

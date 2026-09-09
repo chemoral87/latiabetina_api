@@ -48,7 +48,14 @@ class ChurchMember extends Model implements AuditableContract
 
     public function getUrlImageS3Attribute(): ?string {
         $path = is_string($this->url_image) ? $this->url_image : null;
-        return temporaryUrlS3($path);
+        $url = temporaryUrlS3($path);
+        \Illuminate\Support\Facades\Log::info('ChurchMember url_image_s3 accessor', [
+            'member_id' => $this->id,
+            'url_image' => $this->url_image,
+            'resolved_path' => $path,
+            'url_length' => strlen($url ?? ''),
+        ]);
+        return $url;
     }
 
     public function organization(): BelongsTo
