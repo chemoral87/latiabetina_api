@@ -260,6 +260,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/{id}/consolidator-logs', 'consolidatorLogs')->middleware('permission_org:church-member-index');
         Route::get('/{id}/medals', 'medals')->middleware('permission_org:conso-sheet-index');
         Route::post('/{id}/medals', 'storeMedal')->middleware('permission_org:conso-sheet-index');
+        Route::delete('/{id}/medals/{medalId}', 'destroyMedal')->middleware('permission_org:conso-sheet-index');
+        Route::get('/{id}/medal-logs', 'medalLogs')->middleware('permission_org:conso-sheet-index');
     });
 
     Route::prefix('church-member')->controller(ChurchMemberTrackingLogController::class)->group(function () {

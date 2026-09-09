@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
 use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Church\ChurchMember;
 use App\Models\Church\ChurchMemberConsolidatorLog;
+use App\Models\Church\ChurchMemberMedalLog;
 use App\Models\Church\ChurchMemberTrackingLog;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -555,7 +556,13 @@ $member = ChurchMember::create($data);
         $medals = $member->medals()
             ->with('creator')
             ->orderByDesc('id')
-            ->get();
+            ->get()
+            ->map(function ($medal) {
+                if (is_string($medal->description)) {
+                    $medal->description = json_decode($medal->description, true);
+                }
+                return $medal;
+            });
 
         return response()->json($medals);
     }
@@ -566,16 +573,66 @@ $member = ChurchMember::create($data);
 
         $request->validate([
             'medal'       => 'required|string|max:255',
-            'description' => 'nullable|string|max:255',
+            'description' => 'nullable|array',
         ]);
+
+        $description = $request->description;
+        if (is_array($description)) {
+            $description = json_encode($description);
+        }
 
         $medal = $member->medals()->create([
             'medal'       => $request->medal,
-            'description' => $request->description,
+            'description' => $description,
             'created_by'  => $this->user->id,
         ]);
 
+        ChurchMemberMedalLog::create([
+            'church_member_id' => $member->id,
+            'medal'            => $request->medal,
+            'description'      => $description,
+            'action'           => 'assigned',
+            'changed_by'       => $this->user->id,
+        ]);
+
         return response()->json($medal->load('creator'), 201);
+    }
+
+    public function destroyMedal(Request $request, $id, $medalId)
+    {
+        $member = $this->findMemberInScope($id);
+
+        $medal = $member->medals()->findOrFail($medalId);
+
+        ChurchMemberMedalLog::create([
+            'church_member_id' => $member->id,
+            'medal'            => $medal->medal,
+            'description'      => $medal->description,
+            'action'           => 'removed',
+            'changed_by'       => $this->user->id,
+        ]);
+
+        $medal->delete();
+
+        return response()->json(['success' => 'Medalla removida exitosamente']);
+    }
+
+    public function medalLogs(Request $request, $id)
+    {
+        $member = $this->findMemberInScope($id);
+
+        $logs = ChurchMemberMedalLog::where('church_member_id', $member->id)
+            ->with('changer:id,name,last_name')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function ($log) {
+                if (is_string($log->description)) {
+                    $log->description = json_decode($log->description, true);
+                }
+                return $log;
+            });
+
+        return response()->json($logs);
     }
 
     /**

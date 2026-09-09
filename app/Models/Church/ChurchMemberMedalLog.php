@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ChurchMemberMedal extends Model
+class ChurchMemberMedalLog extends Model
 {
     use HasFactory;
 
@@ -14,7 +14,8 @@ class ChurchMemberMedal extends Model
         'church_member_id',
         'medal',
         'description',
-        'created_by',
+        'action',
+        'changed_by',
     ];
 
     public function churchMember()
@@ -22,8 +23,8 @@ class ChurchMemberMedal extends Model
         return $this->belongsTo(ChurchMember::class);
     }
 
-    public function creator()
+    public function changer()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'changed_by');
     }
 }
