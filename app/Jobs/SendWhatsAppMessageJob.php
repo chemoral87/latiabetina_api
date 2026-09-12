@@ -43,13 +43,14 @@ class SendWhatsAppMessageJob implements ShouldQueue
     private function normalizePhone(string $phone): string
     {
         $digits = preg_replace('/\D/', '', $phone);
-        // Si son 10 dígitos (ej. 8120441172) -> anteponer 52 para MX: 528120441172
+        // Si son 10 dígitos (ej. 8120441172) -> anteponer 521 para envío por WhatsApp MX: 5218120441172
+        // (WhatsApp requiere el "1" de móvil MX en el JID, aunque Twilio/otros no lo usen)
         if (strlen($digits) === 10) {
-            $digits = '52' . $digits;
+            $digits = '521' . $digits;
         }
-        // 521... (formato antiguo móvil MX) -> 52...
-        if (strlen($digits) === 13 && str_starts_with($digits, '521')) {
-            $digits = '52' . substr($digits, 3);
+        // 52 + 10 dígitos sin el "1" móvil (12 dígitos, ej. 528120441172) -> insertar el "1": 5218120441172
+        if (strlen($digits) === 12 && str_starts_with($digits, '52') && !str_starts_with($digits, '521')) {
+            $digits = '521' . substr($digits, 2);
         }
         return $digits;
     }
