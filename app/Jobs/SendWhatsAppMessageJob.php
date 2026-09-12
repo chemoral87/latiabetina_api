@@ -142,9 +142,9 @@ class SendWhatsAppMessageJob implements ShouldQueue
                         $errorMessage = $response->json('error') ?? $response->body();
                         $code = $response->json('code');
 
-                        // getChat/undefined after send is often post-send ack — message WAS delivered
-                        if (str_contains($errorMessage, 'getChat') || str_contains($errorMessage, 'undefined')) {
-                            Log::warning("WhatsApp Job: getChat warning but message likely delivered to {$effectivePhone} — " . $errorMessage);
+                        // getChat/undefined/session-not-active after send is often post-send ack — message WAS delivered
+                        if (str_contains($errorMessage, 'getChat') || str_contains($errorMessage, 'undefined') || str_contains($errorMessage, 'session is not active')) {
+                            Log::warning("WhatsApp Job: post-send warning but message likely delivered to {$effectivePhone} — " . $errorMessage);
                             // Don't throw — treat as success with warning (user receives it)
                             WhatsappMessageLog::create([
                                 'queue_name'      => 'whatsapp',
@@ -189,9 +189,9 @@ class SendWhatsAppMessageJob implements ShouldQueue
                         $errorMessage = "WhatsApp Bot server is unreachable. Please ensure the bot server is running.";
                     }
 
-                    // getChat post-send warning — message was likely delivered (user confirms receipt)
-                    if (str_contains($errorMessage, 'getChat') || str_contains($errorMessage, 'undefined')) {
-                        Log::warning("WhatsApp Job: getChat warning but likely delivered to {$effectivePhone} (orig {$originalPhone}) — " . $errorMessage);
+                    // getChat / undefined / session-not-active post-send warning — message was likely delivered (user confirms receipt)
+                    if (str_contains($errorMessage, 'getChat') || str_contains($errorMessage, 'undefined') || str_contains($errorMessage, 'session is not active')) {
+                        Log::warning("WhatsApp Job: post-send warning but likely delivered to {$effectivePhone} (orig {$originalPhone}) — " . $errorMessage);
                         WhatsappMessageLog::create([
                             'queue_name'      => 'whatsapp',
                             'sender'          => $this->resolveSender(),
