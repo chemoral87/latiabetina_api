@@ -232,12 +232,9 @@ class SendWhatsAppMessageJob implements ShouldQueue
 
         if (! $executed) {
             // Could not obtain lock, release the job back to the queue with a random delay
-            $this->release(rand(10, 20));
+            $this->release(rand(20, 30));
             return;
         }
-
-        // Wait a random amount of time before finishing to ensure a gap between jobs on this worker
-        $this->release(rand(10, 20));
     }
 
     public function failed(\Throwable $e): void
