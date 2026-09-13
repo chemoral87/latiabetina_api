@@ -94,6 +94,23 @@ class SendWhatsAppMessageJob implements ShouldQueue
         }
     }
 
+    /**
+     * Determina si el entorno actual es producción, aceptando variantes comunes
+     * de APP_ENV (case-insensitive: "production", "PROD", "Production", etc.).
+     *
+     * Bug real detectado 2026-09-12: el .env de producción tenía APP_ENV=PROD
+     * (no "production"), y app()->environment('production') hace match exacto
+     * (case-sensitive, string completo) -> devolvía false también en producción,
+     * lo que causaba que TODOS los WhatsApp (incluidos los de bienvenida a
+     * miembros reales) se redirigieran silenciosamente al número de prueba.
+     * Ver features/todo/church-member-create-whatsapp-test-vs-real-phone.md
+     */
+    private function isProductionEnvironment(): bool
+    {
+        $env = strtolower((string) app()->environment());
+        return in_array($env, ['production', 'prod'], true);
+    }
+
     public function handle(): void
     {
         $executed = RateLimiter::attempt(
@@ -109,7 +126,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                 // (per request: if environment is not prod, sent to WHATSAPP_TEST_PHONE instead)
                 $effectivePhone = $this->phone;
                 $originalPhone  = $this->phone;
-                if (!app()->environment('production')) {
+                if (!$this->isProductionEnvironment()) {
                     $effectivePhone = config('services.whatsapp.test_phone', '8120221172');
                     if ($originalPhone !== $effectivePhone) {
                         Log::info("WhatsApp Job [non-prod] redirecting {$originalPhone} → {$effectivePhone}", [
@@ -145,7 +162,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                         // getChat/undefined/session-not-active after send is often post-send ack — message WAS delivered
                         if (str_contains($errorMessage, 'getChat') || str_contains($errorMessage, 'undefined') || str_contains($errorMessage, 'session is not active')) {
                             Log::warning("WhatsApp Job: post-send warning but message likely delivered to {$effectivePhone} — " . $errorMessage);
-                            // Don't throw — treat as success with warning (user receives it)
+                            // Don't throw — treat as success (user receives it)
                             WhatsappMessageLog::create([
                                 'queue_name'      => 'whatsapp',
                                 'sender'          => $this->resolveSender(),
@@ -153,7 +170,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                                 'body'            => $finalMessage,
                                 'media_url'       => $this->mediaUrl,
                                 'success'         => true,
-                                'error_message'   => "Advertencia post-envío: " . $errorMessage,
+                                'error_message'   => null,
                                 'original_log_id' => $this->originalLogId,
                             ]);
                             $this->storeMemberTrackingLog($originalPhone, $finalMessage);
@@ -199,7 +216,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                             'body'            => $finalMessage,
                             'media_url'       => $this->mediaUrl,
                             'success'         => true,
-                            'error_message'   => "Advertencia post-envío: " . $errorMessage,
+                            'error_message'   => null,
                             'original_log_id' => $this->originalLogId,
                         ]);
                         $this->storeMemberTrackingLog($originalPhone, $finalMessage);
