@@ -38,7 +38,9 @@ return [
 
   'exposed_headers' => [],
 
-  'max_age' => 0,
+  // Cache preflight (OPTIONS) responses for 24h per endpoint+origin so the
+  // browser skips repeat preflights and cross-origin traffic is halved.
+  'max_age' => 86400,
 
   'supports_credentials' => true,
 
