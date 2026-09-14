@@ -118,4 +118,9 @@ return [
   'church-member_status_update' => 'Estado actualizado',
   'church-member-tracking-log_create' => 'Interacción registrada',
 
+  'assistance_create' => 'Asistencia capturada',
+  'assistance_update' => 'Asistencia guardada',
+  'assistance_delete' => 'Asistencia eliminada',
+  'assistance_locked' => 'No se puede modificar una asistencia con más de 7 días de antigüedad',
+
 ];

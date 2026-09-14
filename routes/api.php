@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssistanceController;
 use App\Http\Controllers\AuditoriumController;
 use App\Http\Controllers\AuditoriumEventController;
 use App\Http\Controllers\AuditoriumEventSeatController;
@@ -146,6 +147,15 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/{churchEvent}/copy', 'copy')->middleware('permission_org:church-event-create');
         Route::put('/{churchEvent}', 'update')->middleware('permission_org:church-event-update');
         Route::delete('/{churchEvent}', 'destroy')->middleware('permission_org:church-event-delete');
+    });
+
+    Route::prefix('assistance')->controller(AssistanceController::class)->group(function () {
+        Route::get('/', 'index')->middleware('permission_org:assistance-index');
+        Route::get('/chart', 'chart')->middleware('permission_org:assistance-dashboard-view');
+        Route::get('/{assistance}', 'show')->middleware('permission_org:assistance-index');
+        Route::post('/', 'store')->middleware('permission_org:assistance-create');
+        Route::put('/{assistance}', 'update')->middleware('permission_org:assistance-update');
+        Route::delete('/{assistance}', 'destroy')->middleware('permission_org:assistance-delete');
     });
 
     Route::prefix('permission')->controller(PermissionController::class)->group(function () {

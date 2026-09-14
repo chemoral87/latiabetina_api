@@ -27,6 +27,15 @@ class PermissionController extends Controller {
       $query->where("name", "like", "%" . $filter . "%");
     }
 
+    if ((int) $itemsPerPage === -1 || $itemsPerPage === '-1') {
+      $all = $query->get();
+      return response()->json([
+        'data' => $all,
+        'total' => $all->count(),
+        'itemsPerPage' => -1,
+      ]);
+    }
+
     $permissions = $query->paginate($itemsPerPage);
     return new DataSetResource($permissions);
   }
