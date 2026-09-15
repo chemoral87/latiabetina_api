@@ -125,7 +125,7 @@ class AssistanceController extends Controller
     private function validated(Request $request, ?int $ignoreId = null): array
     {
         return $request->validate([
-            'org_id' => 'required|exists:organizations,id',
+            'org_id' => $ignoreId ? 'nullable|exists:organizations,id' : 'required|exists:organizations,id',
             'assistance_date' => 'required|date',
             'service_time' => ['required', 'date_format:H:i', Rule::in(self::VALID_SERVICE_TIMES)],
             'adults' => 'required|integer|min:0',
