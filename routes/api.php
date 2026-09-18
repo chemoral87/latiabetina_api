@@ -151,7 +151,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
     Route::prefix('assistance')->controller(AssistanceController::class)->group(function () {
         Route::get('/', 'index')->middleware('permission_org:assistance-index');
-        Route::get('/chart', 'chart')->middleware('permission_org:assistance-dashboard-view');
+        Route::get('/chart', 'chart')->middleware('permission_org:assistance-index');
         Route::get('/{assistance}', 'show')->middleware('permission_org:assistance-index');
         Route::post('/', 'store')->middleware('permission_org:assistance-create');
         Route::put('/{assistance}', 'update')->middleware('permission_org:assistance-update');

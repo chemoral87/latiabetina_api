@@ -113,7 +113,7 @@ class AssistanceController extends Controller
             $query->whereDate('assistance_date', '<=', $endDate);
         }
 
-        $query = $this->applyOrgPermissionScope($query, $request->user(), 'assistance-dashboard-view');
+        $query = $this->applyOrgPermissionScope($query, $request->user(), 'assistance-index');
 
         $rows = $query->orderBy('assistance_date', 'asc')->get([
             'assistance_date', 'service_time', 'adults', 'teens', 'kids', 'babies',
