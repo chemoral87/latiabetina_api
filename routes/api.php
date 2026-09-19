@@ -154,6 +154,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/chart', 'chart')->middleware('permission_org:assistance-index');
         Route::get('/{assistance}', 'show')->middleware('permission_org:assistance-index');
         Route::post('/', 'store')->middleware('permission_org:assistance-create');
+        Route::post('/bulk', 'bulkStore')->middleware('permission_org:assistance-insert');
         Route::put('/{assistance}', 'update')->middleware('permission_org:assistance-update');
         Route::delete('/{assistance}', 'destroy')->middleware('permission_org:assistance-delete');
     });

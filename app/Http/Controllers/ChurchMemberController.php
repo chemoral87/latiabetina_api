@@ -502,7 +502,8 @@ $member = ChurchMember::create($data);
             $query->where(function ($q) use ($term) {
                 $q->whereHas('churchMember', function ($q2) use ($term) {
                     $q2->where('name', 'like', $term)
-                       ->orWhere('last_name', 'like', $term);
+                       ->orWhere('last_name', 'like', $term)
+                       ->orWhere('cellphone', 'like', $term);
                 })->orWhere('medium', 'like', $term)
                   ->orWhere('description', 'like', $term);
             });

@@ -11,6 +11,7 @@ Permiso `assistance-index` en la API.
 
 - `GET /assistance -> AssistanceController@index`
 - `GET /assistance/{assistance} -> AssistanceController@show`
+- `GET /assistance/chart -> AssistanceController@chart` (scope con `assistance-index`; el permiso `assistance-dashboard-view` ya no se usa en la API)
 
 ## Enforced by
 

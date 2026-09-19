@@ -28,5 +28,6 @@ Status: `403 Forbidden`
 ## Notes
 
 - This endpoint returns the **current user's own tracking logs** (where `created_by = current_user_id`), filtered by org scope
+- Org scope is applied by `ChurchMemberController` with `conso-sheet-index` (or `church-member-all` when present), not with this permission
 - Uses `permission_org:` middleware (org-aware) instead of Spatie's `permission:` middleware
 - Supports query params: `page`, `itemsPerPage`, `sortBy`, `sortDesc`, `filter`, `medium`, `date_from`, `date_to`

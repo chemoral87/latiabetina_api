@@ -99,6 +99,58 @@ class AssistanceController extends Controller
         }
     }
 
+    public function bulkStore(Request $request): JsonResponse
+    {
+        $request->validate(['rows' => 'required|array|min:1']);
+
+        $userId = $request->user()->id;
+        $created = $updated = 0;
+
+        foreach ($request->rows as $row) {
+            $validator = \Validator::make($row, [
+                'org_id' => 'required|exists:organizations,id',
+                'assistance_date' => 'required|date',
+                'service_time' => ['required', 'date_format:H:i', Rule::in(self::VALID_SERVICE_TIMES)],
+                'adults' => 'required|integer|min:0',
+                'teens' => 'required|integer|min:0',
+                'kids' => 'required|integer|min:0',
+                'babies' => 'required|integer|min:0',
+                'notes' => 'nullable|string',
+            ]);
+
+            if ($validator->fails()) {
+                abort(422, 'Row validation failed: '.$validator->errors()->first());
+            }
+
+            $data = $validator->validated();
+            $data['created_by'] = $userId;
+            $data['updated_by'] = $userId;
+
+            $existing = Assistance::where([
+                ['org_id', $data['org_id']],
+                ['assistance_date', $data['assistance_date']],
+                ['service_time', $data['service_time']],
+            ])->exists();
+
+            Assistance::updateOrCreate(
+                [
+                    'org_id' => $data['org_id'],
+                    'assistance_date' => $data['assistance_date'],
+                    'service_time' => $data['service_time'],
+                ],
+                $data
+            );
+
+            $existing ? $updated++ : $created++;
+        }
+
+        return response()->json([
+            'success' => __('messa.assistance_bulk_imported', ['created' => $created, 'updated' => $updated]),
+            'created' => $created,
+            'updated' => $updated,
+        ]);
+    }
+
     public function chart(Request $request): JsonResponse
     {
         $query = Assistance::query();
@@ -132,6 +184,7 @@ class AssistanceController extends Controller
             'teens' => 'required|integer|min:0',
             'kids' => 'required|integer|min:0',
             'babies' => 'required|integer|min:0',
+            'newcomers' => 'nullable|integer|min:0',
             'notes' => 'nullable|string',
         ]);
     }

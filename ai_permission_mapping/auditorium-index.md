@@ -6,7 +6,6 @@ Permiso `auditorium-index` en la API.
 
 - `routes\api.php` (middleware `permission_org:auditorium-index`)
 - `app\Http\Controllers\AuditoriumController.php` (`applyOrgPermissionScope` con `'auditorium-index'`)
-- `app\Http\Controllers\AuditoriumEventController.php` (`applyOrgPermissionScope` con `'auditorium-index'`)
 
 ## Routes protected
 

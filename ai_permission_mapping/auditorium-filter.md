@@ -5,7 +5,7 @@ Permiso `auditorium-filter` en la API.
 ## Files
 
 - `routes\api.php` (middleware `permission_org:auditorium-filter`)
-- `app\Http\Controllers\AuditoriumController.php` (`applyOrgPermissionScope` con `'auditorium-filter'`)
+- `app\Http\Controllers\AuditoriumController.php` (solo el método `filter` aplica `applyOrgPermissionScope` con `'auditorium-filter'`; `index`/`show` usan `auditorium-index`)
 
 ## Routes protected
 

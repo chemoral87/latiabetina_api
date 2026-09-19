@@ -22,6 +22,7 @@ class Assistance extends Model
         'teens',
         'kids',
         'babies',
+        'newcomers',
         'notes',
         'created_by',
         'updated_by',
@@ -33,6 +34,7 @@ class Assistance extends Model
         'teens' => 'integer',
         'kids' => 'integer',
         'babies' => 'integer',
+        'newcomers' => 'integer',
     ];
 
     protected $appends = ['total'];

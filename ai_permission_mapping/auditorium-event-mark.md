@@ -5,6 +5,8 @@ Permiso `auditorium-event-mark` en la API.
 ## Files
 
 - `routes\api.php` (middleware `permission_org:auditorium-event-mark`)
+- `app\Http\Controllers\AuditoriumEventController.php` (el `show` de eventos aplica el scope por org con `auditorium-event-index`)
+- `app\Http\Controllers\AuditoriumEventSeatController.php` y `AuditoriumEventSeatLogController.php` (lectura/escritura de marcas por asiento)
 
 ## Routes protected
 
