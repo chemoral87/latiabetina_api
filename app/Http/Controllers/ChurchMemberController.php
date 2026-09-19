@@ -57,6 +57,10 @@ class ChurchMemberController extends Controller
             $query->where('conso_sheet_id', $request->conso_sheet_id);
         }
 
+        if ($request->boolean('has_phone')) {
+            $query->whereNotNull('cellphone')->where('cellphone', '!=', '');
+        }
+
        if ($request->has('filter') && !empty($request->filter)) {
            $term = '%' . $request->filter . '%';
            $query->where(function ($q) use ($term) {
