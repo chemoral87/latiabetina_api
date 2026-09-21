@@ -481,7 +481,7 @@ $member = ChurchMember::create($data);
     public function trackingLogsIndex(Request $request)
     {
         $query = ChurchMemberTrackingLog::query()
-            ->with('churchMember:id,name,last_name,org_id')
+            ->with('churchMember:id,name,last_name,cellphone')
             ->where('created_by', $this->user->id);
 
         // Filter by member's org based on permission

@@ -26,7 +26,7 @@ class ChurchMemberTrackingLogController extends Controller
     {
         $member = $this->findMemberInScope($id);
 
-        $query = $member->trackingLogs()->with(['creator', 'churchMember']);
+        $query = $member->trackingLogs()->with(['creator', 'churchMember:id,name,last_name,cellphone']);
 
         $page = $request->get('page', 1);
         $itemsPerPage = $request->get('itemsPerPage', 10);
@@ -100,10 +100,10 @@ class ChurchMemberTrackingLogController extends Controller
 
         $orgIds = $this->user->getOrgsByPermission('church-member-tracking-logs-all');
         $query = ChurchMemberTrackingLog::query()
-            ->with([
-                'churchMember:id,name,last_name,org_id',
-                'creator:id,name,last_name',
-            ]);
+->with([
+    'churchMember:id,name,last_name,cellphone',
+    'creator:id,name,last_name',
+]);
 
         if (empty($orgIds)) {
             $query->whereRaw('1 = 0');
