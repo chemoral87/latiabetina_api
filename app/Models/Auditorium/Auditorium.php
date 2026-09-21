@@ -15,6 +15,7 @@ class Auditorium extends Model {
     'config',
     'org_id',
     'created_by',
+    'layout_version',
   ];
 
 }

@@ -85,6 +85,7 @@ class AuditoriumController extends Controller {
       'org_id' => 'required|integer',
       'config' => 'nullable|string',
       'created_by' => 'nullable|integer',
+      'layout_version' => 'nullable|integer|in:1,2',
     ]);
     $auditorium = Auditorium::create([
       'name' => $request->input('name'),
@@ -92,8 +93,17 @@ class AuditoriumController extends Controller {
       'org_id' => $request->input('org_id'),
       'created_by' => $userId,
       'last_updated_by' => $userId,
+      'layout_version' => $request->input('layout_version', 1),
     ]);
-    return ['success' => __('messa.auditorium_create', ['name' => $auditorium->name]), 'data' => $auditorium];
+    
+    // Fetch the auditorium with org_name for consistent response format
+    $auditoriumWithOrg = Auditorium::query()
+      ->leftJoin('organizations', 'auditoriums.org_id', '=', 'organizations.id')
+      ->select('auditoriums.*', 'organizations.name as org_name')
+      ->where('auditoriums.id', $auditorium->id)
+      ->first();
+    
+    return ['success' => __('messa.auditorium_create', ['name' => $auditorium->name]), 'data' => $auditoriumWithOrg];
   }
 
   public function update(Request $request, $id) {
@@ -102,13 +112,18 @@ class AuditoriumController extends Controller {
     $this->validate($request, [
       'name' => 'required',
       'config' => 'nullable|string',
+      'layout_version' => 'nullable|integer|in:1,2',
     ]);
     $auditorium = Auditorium::findOrFail($id);
-    $auditorium->update([
+    $update = [
       'name' => $request->input('name'),
       'config' => $request->input('config'),
       'last_updated_by' => $userId,
-    ]);
+    ];
+    if ($request->has('layout_version')) {
+      $update['layout_version'] = $request->input('layout_version');
+    }
+    $auditorium->update($update);
     return ['success' => __('messa.auditorium_update', ['name' => $auditorium->name]), 'data' => $auditorium];
   }
 
