@@ -84,7 +84,7 @@ class AuditoriumEventController extends Controller {
     $event = AuditoriumEvent::query()
       ->leftJoin('auditoriums', 'auditorium_events.auditorium_id', '=', 'auditoriums.id')
       ->leftJoin('organizations', 'auditorium_events.org_id', '=', 'organizations.id')
-      ->select('auditorium_events.*', 'auditoriums.name as auditorium_name', 'organizations.name as org_name')
+      ->select('auditorium_events.*', 'auditoriums.name as auditorium_name', 'auditoriums.layout_version', 'organizations.name as org_name')
       ->where('auditorium_events.id', $id)
       ->firstOrFail();
 
@@ -128,6 +128,7 @@ class AuditoriumEventController extends Controller {
     // Flat display names so the newly created row shows correctly in the
     // table without a reload (matches the index() joined columns).
     $event->auditorium_name = $auditorium->name;
+    $event->layout_version = $auditorium->layout_version;
     $event->org_name = Organization::find($event->org_id)?->name ?? '';
     return [
       'success' => __('messa.auditorium_event_create'),
@@ -160,6 +161,7 @@ class AuditoriumEventController extends Controller {
     // Flat display names so the edited row shows correctly in the table
     // without a reload (matches the index() joined columns).
     $event->auditorium_name = $auditorium->name;
+    $event->layout_version = $auditorium->layout_version;
     $event->org_name = Organization::find($event->org_id)?->name ?? '';
     return [
       'success' => __('messa.auditorium_event_update'),
