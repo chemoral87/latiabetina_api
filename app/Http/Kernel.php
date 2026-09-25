@@ -41,7 +41,7 @@ class Kernel extends HttpKernel {
     'api' => [
       \Illuminate\Http\Middleware\HandleCors::class, // ⭐ Agrega esta línea
       // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-      \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
+      \App\Http\Middleware\ThrottleRequestsUnlessProduction::class,
       \Illuminate\Routing\Middleware\SubstituteBindings::class,
       \App\Http\Middleware\ConvertRequestKeysToSnakeCase::class,
     ],
