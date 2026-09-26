@@ -204,7 +204,7 @@ class AuditoriumEventController extends Controller {
     $event->org_name = Organization::find($event->org_id)?->name ?? '';
     return [
       'success' => __('messa.auditorium_event_update'),
-      'data' => $event,
+      // 'data' => $event,
     ];
   }
 
