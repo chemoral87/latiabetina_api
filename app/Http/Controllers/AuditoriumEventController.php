@@ -94,13 +94,52 @@ class AuditoriumEventController extends Controller {
       ->whereNotNull('status')
       ->get();
 
-    $event->seats = $seats->groupBy('status')->map(function ($group) {
-      return $group->pluck('seat_id')->toArray();
+    // Build old-id → letter map from v3 config so legacy seat IDs are translated.
+    $idToLetter = [];
+    $rawConfig = $event->config ?? null;
+    if ($rawConfig) {
+      $cfg = is_string($rawConfig) ? json_decode($rawConfig, true) : $rawConfig;
+      if (isset($cfg['v']) && $cfg['v'] === 3 && isset($cfg['sc'])) {
+        foreach ($cfg['sc'] as $idx => $section) {
+          $letter = self::indexToLetter($idx);
+          // section id in v3 IS the letter; legacy ids were like "section-timestamp-counter"
+          // stored in old seat_id rows as prefix before "-row-col"
+          $idToLetter[$letter] = $letter; // already short — no-op
+        }
+      } elseif (isset($cfg['v']) && $cfg['v'] === 2 && isset($cfg['sections'])) {
+        foreach ($cfg['sections'] as $idx => $section) {
+          $letter = self::indexToLetter($idx);
+          $idToLetter[$section['id']] = $letter;
+        }
+      }
+    }
+
+    $event->seats = $seats->groupBy('status')->map(function ($group) use ($idToLetter) {
+      return $group->pluck('seat_id')->map(function ($seatId) use ($idToLetter) {
+        if (empty($idToLetter)) return $seatId;
+        foreach ($idToLetter as $oldId => $letter) {
+          if ($oldId === $letter) continue; // already short
+          if (str_starts_with($seatId, $oldId . '-')) {
+            return $letter . substr($seatId, strlen($oldId));
+          }
+        }
+        return $seatId;
+      })->values()->toArray();
     });
 
     $event->timestamp = round(microtime(true) * 1000);
 
     return response()->json($event);
+  }
+
+  private static function indexToLetter(int $n): string {
+    $s = '';
+    $i = $n;
+    do {
+      $s = chr(65 + ($i % 26)) . $s;
+      $i = intdiv($i, 26) - 1;
+    } while ($i >= 0);
+    return $s;
   }
 
   public function store(Request $request) {
