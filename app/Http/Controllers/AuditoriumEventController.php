@@ -115,16 +115,27 @@ class AuditoriumEventController extends Controller {
     }
 
     $event->seats = $seats->groupBy('status')->map(function ($group) use ($idToLetter) {
-      return $group->pluck('seat_id')->map(function ($seatId) use ($idToLetter) {
-        if (empty($idToLetter)) return $seatId;
+      $bySection = [];
+      foreach ($group as $row) {
+        $seatId = $row->seat_id;
         foreach ($idToLetter as $oldId => $letter) {
-          if ($oldId === $letter) continue; // already short
-          if (str_starts_with($seatId, $oldId . '-')) {
-            return $letter . substr($seatId, strlen($oldId));
+          if ($oldId !== $letter && str_starts_with($seatId, $oldId . '-')) {
+            $seatId = $letter . substr($seatId, strlen($oldId));
+            break;
           }
         }
-        return $seatId;
-      })->values()->toArray();
+        // "A-1-6" → letter "A", rest "1-6"
+        $dash = strpos($seatId, '-');
+        if ($dash === false) {
+          $bySection['?'][] = $seatId;
+          continue;
+        }
+        $letter = substr($seatId, 0, $dash);
+        $rest = substr($seatId, $dash + 1);
+        $bySection[$letter][] = $rest;
+      }
+      ksort($bySection);
+      return $bySection;
     });
 
     $event->timestamp = round(microtime(true) * 1000);

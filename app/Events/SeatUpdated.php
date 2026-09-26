@@ -45,11 +45,23 @@ class SeatUpdated implements ShouldBroadcast {
   }
 
   /**
-   * Get the data to broadcast.
+   * Get the data to broadcast. Seat ids are grouped by section letter to keep
+   * the payload small: { "A": ["1-6", "1-7"], "B": ["2-1"] }.
    */
   public function broadcastWith(): array {
+    $grouped = [];
+    foreach ((array) $this->seatIds as $seatId) {
+      $dash = strpos($seatId, '-');
+      if ($dash === false) {
+        $grouped['?'][] = $seatId;
+        continue;
+      }
+      $letter = substr($seatId, 0, $dash);
+      $grouped[$letter][] = substr($seatId, $dash + 1);
+    }
+    ksort($grouped);
     return [
-      'z' => $this->seatIds,
+      'z' => $grouped,
       's' => $this->status,
       // 'i' => $this->auditoriumEventId,
       't' => $this->timestamp,
