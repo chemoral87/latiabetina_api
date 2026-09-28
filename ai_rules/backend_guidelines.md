@@ -143,7 +143,7 @@ class ProductController extends Controller {
 - **Store**: `$request->validate([...])` inline, return 201 with `__('messa.{resource}_{action}')`
 - **Show**: Route-model binding, `makeVisible()->append()` for S3 URLs
 - **Update**: Return 200
-- **Destroy**: Soft delete, return 200
+- **Destroy**: Soft delete, return 200. Must be idempotent — see `ai_rules/delete_idempotency.md`
 - **Org-scoping**: Use `$this->applyOrgPermissionScope($query, $user, 'permission-name')` trait
 - **Custom methods**: Named descriptively (`calendar()`, `pos()`, `reorder()`, `publicIndex()`)
 - **No Form Request classes**: Use inline `$request->validate([...])`

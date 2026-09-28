@@ -154,8 +154,10 @@ class ConsoSheetController extends Controller
 
     public function delete($id)
     {
-        $sheet = ConsoSheet::findOrFail($id);
-        $sheet->delete();
-        return response()->json(['message' => 'Consolidated sheet deleted successfully']);
+        $sheet = ConsoSheet::find($id);
+        if ($sheet) {
+            $sheet->delete();
+        }
+        return response()->json(['success' => __('messa.conso_sheet_delete')]);
     }
 }

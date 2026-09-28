@@ -118,6 +118,8 @@ return [
   'church-member_status_update' => 'Estado actualizado',
   'church-member-tracking-log_create' => 'Interacción registrada',
 
+  'conso_sheet_delete' => 'Hoja de consolidación eliminada',
+
   'assistance_create' => 'Asistencia capturada',
   'assistance_update' => 'Asistencia guardada',
   'assistance_delete' => 'Asistencia eliminada',
