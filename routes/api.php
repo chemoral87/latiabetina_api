@@ -17,6 +17,7 @@ use App\Http\Controllers\ExpensesController;
 use App\Http\Controllers\ExpenseTicketsController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\LifeGroupController;
+use App\Http\Controllers\MusicScoreController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
@@ -197,6 +198,15 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/', 'create')->middleware('permission_org:organization-create');
         Route::put('/{id}', 'update')->middleware('permission_org:organization-update');
         Route::delete('/{id}', 'delete')->middleware('permission_org:organization-delete');
+    });
+
+    Route::prefix('music-scores')->controller(MusicScoreController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::get('/{musicScore}', 'show');
+        Route::post('/', 'store');
+        Route::post('/import', 'import');
+        Route::put('/{musicScore}', 'update');
+        Route::delete('/{musicScore}', 'destroy');
     });
 
     Route::prefix('profile')->controller(ProfileController::class)->group(function () {

@@ -20,3 +20,4 @@ features/*
 graphify-out/*
 CLAUDE.md
 .claude/settings.json
+.phpunit.result.cache

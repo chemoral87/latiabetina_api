@@ -101,6 +101,8 @@ return [
   'song_create' => 'Canción creada',
   'song_update' => 'Canción guardada',
   'song_delete' => 'Canción eliminada',
+  'music_score_create' => 'Partitura creada',
+  'music_score_update' => 'Partitura guardada',
 
   'product_create' => 'Producto :name creado',
   'product_update' => 'Producto :name guardado',
