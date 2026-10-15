@@ -73,6 +73,10 @@ Route::group(['middleware' => ['api']], function () {
         Route::get('/public/carousel', 'publicCarousel');
     });
 
+    Route::prefix('professionals')->controller(\App\Http\Controllers\ProfessionalController::class)->group(function () {
+        Route::get('/public', 'publicIndex');
+    });
+
     Route::prefix('user')->controller(UserController::class)->group(function () {
         Route::post('register', 'register');
         Route::post('send-code', 'sendResetCode')->middleware('throttle:3,1');
@@ -321,6 +325,11 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/', 'store')->middleware('permission_org:song-create');
         Route::put('/{song}', 'update')->middleware('permission_org:song-update');
         Route::delete('/{song}', 'destroy')->middleware('permission_org:song-delete');
+    });
+
+    Route::prefix('professionals')->controller(\App\Http\Controllers\ProfessionalController::class)->group(function () {
+        Route::post('/', 'store');
+        Route::get('/mine', 'myListing');
     });
 
     Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
