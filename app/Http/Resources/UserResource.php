@@ -22,6 +22,10 @@ class UserResource extends JsonResource {
 
     // Gather all permissions and roles from all profiles
     foreach ($this->profiles as $profile) {
+      // Disabled profile (end_date passed) contributes nothing
+      if (! $profile->isEnabled()) {
+        continue;
+      }
       $orgCode = $profile->organization->short_code;
       $orgs[] = [
         'id' => $profile->org_id,

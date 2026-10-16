@@ -112,7 +112,12 @@ class ChurchMemberController extends Controller
             $query->orderByDesc('last_contacted');
         }
 
-        return response()->json($query->get());
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        if ($itemsPerPage === '-1') {
+            return response()->json(['data' => $query->get()]);
+        }
+
+        return response()->json($query->paginate((int) $itemsPerPage));
     }
 
     public function show($id)

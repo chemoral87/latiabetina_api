@@ -104,6 +104,10 @@ final class User extends Authenticatable implements JWTSubject, AuditableContrac
     {
         $permissionsOrgs = [];
         foreach ($this->profiles as $profile) {
+            // Disabled profile (end_date passed) contributes nothing
+            if (! $profile->isEnabled()) {
+                continue;
+            }
             foreach ($profile->roles as $role) {
                 foreach ($role->permissions as $perm) {
                     $permissionsOrgs[$perm->name][$profile->org_id] = true;

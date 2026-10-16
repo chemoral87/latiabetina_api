@@ -34,6 +34,7 @@ class ProfileController extends Controller {
       'organization_short_code' => $profile->organization_short_code,
       'roles' => $profile->roles,
       'direct_permissions' => $profile->getDirectPermissions(),
+      'end_date' => $profile->end_date?->format('Y-m-d'),
       // 'roles' => $profile->roles,
       // 'permissions' => $profile->getDirectPermissions(),
     ];
@@ -68,9 +69,11 @@ class ProfileController extends Controller {
       $permissions_ids = $request->permissions_ids;
       $profile->roles()->sync($role_ids);
       $profile->permissions()->sync($permissions_ids);
+      $profile->end_date = $request->filled('end_date') ? $request->get('end_date') : null;
     }
 
     $profile->save();
+    cache()->forget("user:{$user_id}:org_permissions");
     return ['success' => __('messa.profile_update')];
   }
 

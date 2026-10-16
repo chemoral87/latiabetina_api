@@ -15,7 +15,11 @@ final class Profile extends Model {
   protected $guard_name = 'web';
   use HasFactory, HasRoles;
 
-  protected $fillable = ['user_id', 'org_id', 'favorite'];
+  protected $fillable = ['user_id', 'org_id', 'favorite', 'end_date'];
+
+  protected $casts = [
+    'end_date' => 'date',
+  ];
 // append organization name to profile
   protected $appends = ['organization_name', 'organization_short_code'];
 
@@ -36,6 +40,13 @@ final class Profile extends Model {
 
   public function getOrganizationShortCodeAttribute(): string {
     return $this->organization->short_code;
+  }
+
+  /**
+   * Enabled iff end_date is null or strictly greater than today.
+   */
+  public function isEnabled(): bool {
+    return $this->end_date === null || $this->end_date->startOfDay()->gt(today());
   }
 
 }

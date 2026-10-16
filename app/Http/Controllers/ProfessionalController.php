@@ -79,4 +79,24 @@ class ProfessionalController extends Controller {
 
     return response()->json($professional, 201);
   }
+
+  // Authenticated: remove the current user's own listing.
+  public function destroy($id) {
+    if (!$this->user) {
+      return response()->json(['errors' => ['auth' => ['No autenticado']]], 401);
+    }
+
+    // Scoped to user_id so one user cannot delete another user's listing.
+    $professional = Professional::where('id', $id)
+      ->where('user_id', $this->user->id)
+      ->first();
+
+    if (!$professional) {
+      return response()->json(['message' => 'Publicación no encontrada.'], 404);
+    }
+
+    $professional->delete();
+
+    return response()->json(['message' => 'Publicación eliminada.']);
+  }
 }

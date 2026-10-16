@@ -330,6 +330,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     Route::prefix('professionals')->controller(\App\Http\Controllers\ProfessionalController::class)->group(function () {
         Route::post('/', 'store');
         Route::get('/mine', 'myListing');
+        Route::delete('/{id}', 'destroy');
     });
 
     Route::prefix('whatsapp')->controller(\App\Http\Controllers\WhatsAppController::class)->group(function () {
