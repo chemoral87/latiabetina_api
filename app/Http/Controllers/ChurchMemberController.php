@@ -76,7 +76,7 @@ class ChurchMemberController extends Controller
                ->whereColumn('church_member_id', 'church_members.id'),
            'last_contacted_by' => ChurchMemberTrackingLog::query()
                ->leftJoin('users', 'church_member_tracking_logs.created_by', '=', 'users.id')
-               ->selectRaw('CASE WHEN users.id IS NOT NULL THEN CONCAT(users.name, " ", users.last_name) ELSE "Sistema" END as name')
+               ->selectRaw("CASE WHEN users.id IS NOT NULL THEN CONCAT(users.name, ' ', users.last_name) ELSE 'Sistema' END as name")
                ->whereColumn('church_member_tracking_logs.church_member_id', 'church_members.id')
                ->orderByDesc('church_member_tracking_logs.contact_datetime')
                ->orderByDesc('church_member_tracking_logs.id')
