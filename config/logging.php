@@ -3,6 +3,8 @@
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
+use Monolog\Logger;
+use App\Logging\DatabaseHandler;
 
 return [
 
@@ -53,8 +55,18 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['single', 'database'],
             'ignore_exceptions' => false,
+        ],
+
+        'database' => [
+            'driver' => 'custom',
+            'via' => function () {
+                $logger = new Logger('database');
+                $logger->pushHandler(new DatabaseHandler());
+                return $logger;
+            },
+            'level' => env('LOG_LEVEL', 'debug'),
         ],
 
         'single' => [

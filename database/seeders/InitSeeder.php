@@ -39,6 +39,7 @@ class InitSeeder extends Seeder {
       'church-member-all',
       'church-member-consolidator-assign',
       'whatsapp-index', 'whatsapp-send',
+      'log-entry-index',
       'ukelele-course',
       'auditorium-event-mark',
       'auditorium-filter',

@@ -83,7 +83,7 @@ class ChurchMemberController extends Controller
                ->limit(1),
            'assigned_by' => ChurchMemberConsolidatorLog::query()
                ->leftJoin('users as assigner', 'church_member_consolidator_logs.changed_by', '=', 'assigner.id')
-               ->selectRaw('CONCAT(assigner.name, " ", assigner.last_name)')
+               ->selectRaw("CONCAT(assigner.name, ' ', assigner.last_name)")
                ->whereColumn('church_member_consolidator_logs.church_member_id', 'church_members.id')
                ->where('church_member_consolidator_logs.consolidator_id', $this->user->id)
                ->where('church_member_consolidator_logs.action', 'assigned')

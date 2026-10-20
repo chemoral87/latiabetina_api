@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller {
   // https://codingdriver.com/laravel-user-roles-and-permissions-tutorial-with-example.html
-  public function index(Request $request) {
+  public function index(Request $request) { 
     $query = new Role;
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');

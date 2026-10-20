@@ -17,6 +17,7 @@ use App\Http\Controllers\ExpensesController;
 use App\Http\Controllers\ExpenseTicketsController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\LifeGroupController;
+use App\Http\Controllers\LogEntryController;
 use App\Http\Controllers\MusicScoreController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PermissionController;
@@ -162,6 +163,12 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/bulk', 'bulkStore')->middleware('permission_org:assistance-insert');
         Route::put('/{assistance}', 'update')->middleware('permission_org:assistance-update');
         Route::delete('/{assistance}', 'destroy')->middleware('permission_org:assistance-delete');
+    });
+
+    Route::prefix('log-entry')->controller(LogEntryController::class)->group(function () {
+        Route::get('/', 'index')->middleware('permission_org:log-entry-index');
+        Route::get('/{id}', 'show')->middleware('permission_org:log-entry-index');
+        Route::post('/test-error', 'testError')->middleware('permission_org:log-entry-index');
     });
 
     Route::prefix('permission')->controller(PermissionController::class)->group(function () {
