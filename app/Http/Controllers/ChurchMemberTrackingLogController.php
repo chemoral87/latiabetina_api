@@ -35,7 +35,7 @@ class ChurchMemberTrackingLogController extends Controller
 
         if (! empty($sortBy) && is_array($sortBy)) {
             foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
                 $query->orderBy($field, $dir);
             }
         } else {
@@ -133,7 +133,7 @@ class ChurchMemberTrackingLogController extends Controller
                 if (! in_array($field, $sortableFields, true)) {
                     continue;
                 }
-                $direction = isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)
+                $direction = isset($sortDesc[$index]) && $sortDesc[$index] == 'true'
                     ? 'desc'
                     : 'asc';
                 $query->orderBy($field, $direction);

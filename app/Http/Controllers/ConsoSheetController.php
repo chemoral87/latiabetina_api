@@ -68,7 +68,7 @@ class ConsoSheetController extends Controller
 
         if (!empty($sortBy) && is_array($sortBy)) {
             foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
                 $query->orderBy($field, $dir);
             }
         }

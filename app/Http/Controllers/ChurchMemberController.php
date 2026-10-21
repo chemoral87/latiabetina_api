@@ -121,7 +121,7 @@ class ChurchMemberController extends Controller
                 if (!is_string($column) || !in_array($column, $allowedSortColumns)) {
                     continue;
                 }
-                $dir = (isset($directions[$index]) && filter_var($directions[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $dir = (isset($directions[$index]) && $directions[$index] == 'true') ? 'desc' : 'asc';
                 $query->orderBy($column, $dir);
             }
         } else {
@@ -494,7 +494,7 @@ $member = ChurchMember::create($data);
 
         if (!empty($sortBy) && is_array($sortBy)) {
             foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
                 $query->orderBy($field, $dir);
             }
         }
@@ -562,7 +562,7 @@ $member = ChurchMember::create($data);
 
         if (!empty($sortBy) && is_array($sortBy)) {
             foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && filter_var($sortDesc[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
                 $query->orderBy($field, $dir);
             }
         }

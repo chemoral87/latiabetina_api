@@ -40,7 +40,7 @@ class LogEntryController extends Controller
                 if (!in_array($column, ['id', 'level', 'channel', 'message', 'created_at'], true)) {
                     continue;
                 }
-                $dir = (isset($directions[$index]) && filter_var($directions[$index], FILTER_VALIDATE_BOOLEAN)) ? 'desc' : 'asc';
+                $dir = (isset($directions[$index]) && $directions[$index] == 'true') ? 'desc' : 'asc';
                 $query->orderBy($column, $dir);
             }
         } else {
