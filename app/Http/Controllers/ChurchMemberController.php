@@ -29,27 +29,6 @@ class ChurchMemberController extends Controller
 
     public function index(Request $request)
     {
-        $logCtx = ['user_id' => $this->user?->id, 'params' => $request->query()];
-
-        try {
-            return $this->indexResponse($request);
-        } catch (\Throwable $e) {
-            Log::error('ChurchMember index: failed', $logCtx + [
-                'exception' => get_class($e),
-                'message'   => $e->getMessage(),
-                'at'        => $e->getFile() . ':' . $e->getLine(),
-            ]);
-            return response()->json([
-                'error'     => get_class($e),
-                'message'   => $e->getMessage(),
-                'at'        => $e->getFile() . ':' . $e->getLine(),
-                'params'    => $request->query(),
-            ], 500);
-        }
-    }
-
-    private function indexResponse(Request $request)
-    {
         $query = ChurchMember::query();
 
         $hasAll = $this->hasChurchMemberAll();
