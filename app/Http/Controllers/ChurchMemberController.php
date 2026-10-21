@@ -39,7 +39,12 @@ class ChurchMemberController extends Controller
                 'message'   => $e->getMessage(),
                 'at'        => $e->getFile() . ':' . $e->getLine(),
             ]);
-            throw $e;
+            return response()->json([
+                'error'     => get_class($e),
+                'message'   => $e->getMessage(),
+                'at'        => $e->getFile() . ':' . $e->getLine(),
+                'params'    => $request->query(),
+            ], 500);
         }
     }
 
