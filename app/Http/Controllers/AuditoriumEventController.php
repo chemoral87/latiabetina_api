@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Resources\DataSetResource;
 use App\Models\Auditorium\Auditorium;
 use App\Models\Auditorium\AuditoriumEvent;
@@ -13,6 +14,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditoriumEventController extends Controller {
   use AppliesOrgPermissionScope;
+  use AppliesSort;
 
   protected $user;
   public function __construct() {
@@ -36,10 +38,7 @@ class AuditoriumEventController extends Controller {
     $sortDesc = $request->get('sortDesc');
     $filter = $request->get('filter');
 
-    if ($request->has('org_id') && !empty($request->get('org_id'))) {
-      $org_id = $request->get('org_id');
-      $query->where('auditorium_events.org_id', $org_id);
-    }
+    $query = $this->applyOrgIdFilter($query, $request, 'auditorium_events.org_id');
 
     if ($request->has('date') && !empty($request->get('date'))) {
       $dateTime = \Carbon\Carbon::parse($request->get('date'))->subMinutes(105);
@@ -59,10 +58,7 @@ class AuditoriumEventController extends Controller {
     }
 
     if ($sortBy) {
-      foreach ($sortBy as $index => $column) {
-        $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-        $query = $query->orderBy($column, $sortDirection);
-      }
+      $query = $this->applySort($query, $sortBy, $sortDesc);
     }
 
     if ($filter && is_array($filter)) {

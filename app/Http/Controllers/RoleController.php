@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller {
+  use \App\Http\Controllers\Concerns\AppliesSort;
   // https://codingdriver.com/laravel-user-roles-and-permissions-tutorial-with-example.html
   public function index(Request $request) { 
     $query = new Role;
@@ -18,10 +19,7 @@ class RoleController extends Controller {
     $sortDesc = $request->get('sortDesc');
     $filter = $request->get("filter");
 
-    foreach ($request->get('sortBy') as $index => $column) {
-      $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-      $query = $query->orderBy($column, $sortDirection);
-    }
+    $query = $this->applySort($query, $sortBy, $sortDesc);
     if ($filter) {
       $query->where("name", "like", "%" . $filter . "%");
     }

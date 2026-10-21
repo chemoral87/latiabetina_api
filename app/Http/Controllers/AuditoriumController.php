@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Resources\DataSetResource;
 use App\Models\Auditorium\Auditorium;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditoriumController extends Controller {
   use AppliesOrgPermissionScope;
+  use AppliesSort;
 
   protected $user;
 
@@ -30,16 +32,10 @@ class AuditoriumController extends Controller {
     $filter = $request->get('filter');
 
     if ($sortBy) {
-      foreach ($sortBy as $index => $column) {
-        $sortDirection = ($sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-        $query = $query->orderBy($column, $sortDirection);
-      }
+      $query = $this->applySort($query, $sortBy, $sortDesc);
     }
 
-    if ($request->has('org_id') && !empty($request->get('org_id'))) {
-      $org_id = $request->get('org_id');
-      $query->where('auditoriums.org_id', $org_id);
-    }
+    $query = $this->applyOrgIdFilter($query, $request, 'auditoriums.org_id');
 
     if ($filter) {
       $query->where('auditoriums.name', 'like', "%{$filter}%");
@@ -57,9 +53,7 @@ class AuditoriumController extends Controller {
       ->where("auditoriums.name", "like", "%" . $filter . "%")
       ->orderBy("auditoriums.name");
     $query = $this->applyOrgPermissionScope($query, $this->user, 'auditorium-filter', 'auditoriums.org_id');
-    if ($request->has('org_id') && !empty($request->get('org_id'))) {
-      $query->where('auditoriums.org_id', $request->get('org_id'));
-    }
+    $query = $this->applyOrgIdFilter($query, $request, 'auditoriums.org_id');
     $itemsPerPage = (int) $request->get('itemsPerPage', 15);
     if ($itemsPerPage < 1) {
       $itemsPerPage = 15;

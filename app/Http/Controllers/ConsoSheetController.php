@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Http\Controllers\Concerns\AppliesSort;
+use App\Http\Resources\DataSetResource;
 use App\Models\ConsoSheet;
 use Illuminate\Http\Request;
 
@@ -13,6 +15,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class ConsoSheetController extends Controller
 {
     use AppliesOrgPermissionScope;
+    use AppliesSort;
 
       protected $user;
 
@@ -58,26 +61,21 @@ class ConsoSheetController extends Controller
             $query->where('folio_number', 'like', '%' . $request->filter . '%');
         }
 
-        if ($request->has('org_id') && !empty($request->org_id)) {
-            $query->where('org_id', $request->org_id);
-        }
+        $query = $this->applyOrgIdFilter($query, $request);
 
         $itemsPerPage = $request->get('itemsPerPage', 10);
         $sortBy = $request->get('sortBy', ['id']);
         $sortDesc = $request->get('sortDesc', [true]);
 
         if (!empty($sortBy) && is_array($sortBy)) {
-            foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
-                $query->orderBy($field, $dir);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc);
         }
 
         if ($itemsPerPage === '-1') {
             return response()->json(['data' => $query->get()]);
         }
 
-        return response()->json($query->paginate($itemsPerPage));
+        return new DataSetResource($query->paginate($itemsPerPage));
     }
 
     public function consolidators(Request $request)

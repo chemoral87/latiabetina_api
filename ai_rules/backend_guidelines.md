@@ -53,7 +53,7 @@ app/
 ├── helpers.php       -> Global helper functions (auto-loaded via composer.json)
 ├── Http/
 │   ├── Controllers/
-│   │   ├── Concerns/ -> Reusable traits (e.g., AppliesOrgPermissionScope)
+│   │   ├── Concerns/ -> Reusable traits (AppliesOrgPermissionScope, AppliesSort)
 │   │   ├── Controller.php (base)
 │   │   ├── AuthController.php
 │   │   ├── *Controller.php (resource controllers)
@@ -82,26 +82,25 @@ app/
 ```php
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Http\Controllers\Concerns\AppliesSort;
+use App\Http\Resources\DataSetResource;
 
 class ProductController extends Controller {
     use AppliesOrgPermissionScope;
+    use AppliesSort;
 
     public function index(Request $request) {
         $query = Product::query();
         $query = $this->applyOrgPermissionScope($query, $request->user(), 'product-index');
+        $query = $this->applyOrgIdFilter($query, $request);
 
-        queryServerSide($request, $query);
-
-        if ($request->filter) {
+        if ($request->filled('filter')) {
             $query->where('name', 'like', "%{$request->filter}%");
         }
 
-        $perPage = (int) $request->get('itemsPerPage', 10);
-        if ($perPage === -1) {
-            $perPage = $query->count() ?: 1;
-        }
+        $query = $this->applySort($query, $request->get('sortBy'), $request->get('sortDesc'));
 
-        return new DataSetResource($query->paginate($perPage));
+        return new DataSetResource($query->paginate((int) $request->get('itemsPerPage', 10)));
     }
 
     public function store(Request $request) {
@@ -139,7 +138,9 @@ class ProductController extends Controller {
 ```
 
 ### Key Patterns
-- **Index**: `DataSetResource($query->paginate(...))` with `queryServerSide()` for sorting
+- **Index**: `return new DataSetResource($query->paginate($itemsPerPage))` — every index, no exceptions
+- **Sort**: `$this->applySort($query, $sortBy, $sortDesc, $allowedColumns = [])` trait — never inline loops or `queryServerSide()`
+- **Org filter**: `$this->applyOrgIdFilter($query, $request, $orgColumn = 'org_id')` trait — replaces manual `has('org_id')` blocks
 - **Store**: `$request->validate([...])` inline, return 201 with `__('messa.{resource}_{action}')`
 - **Show**: Route-model binding, `makeVisible()->append()` for S3 URLs
 - **Update**: Return 200
@@ -382,10 +383,11 @@ class DataSetResource extends JsonResource {
 
 ## Pagination
 
-- `$request->get('itemsPerPage', 10)` — default 10, -1 returns all
-- Server-side sort: `queryServerSide($request, $query)` reads `sortBy[]` and `sortDesc[]` arrays
-- Default sort: `$query->orderBy('name', 'asc')`
-- Response via `DataSetResource`
+- Every index: `return new DataSetResource($query->paginate((int) $request->get('itemsPerPage', 10)))` — yields `{ data, total, itemsPerPage }`
+- Sorting: `$this->applySort($query, $sortBy, $sortDesc, $allowed = [])` (trait `Concerns\AppliesSort`) — reads `sortBy[]`/`sortDesc[]`; optional column whitelist
+- Org filter: `$this->applyOrgIdFilter($query, $request)` (trait `Concerns\AppliesOrgPermissionScope`)
+- Default sort: apply inside `applySort` call site or add `$query->orderBy(...)` after
+- `queryServerSide()` helper is legacy — do not use in new code
 
 ---
 

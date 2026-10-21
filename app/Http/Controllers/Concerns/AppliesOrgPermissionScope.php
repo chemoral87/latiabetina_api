@@ -22,4 +22,13 @@ trait AppliesOrgPermissionScope
 
         return $query->whereIn($orgColumn, $orgIds);
     }
+
+    protected function applyOrgIdFilter(Builder $query, $request, string $orgColumn = 'org_id'): Builder
+    {
+        if ($request->filled($orgColumn)) {
+            $query->where($orgColumn, $request->input($orgColumn));
+        }
+
+        return $query;
+    }
 }

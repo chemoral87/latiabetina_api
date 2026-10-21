@@ -6,9 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\WhatsappMessageLog;
+use App\Http\Resources\DataSetResource;
 
 class WhatsAppController extends Controller
 {
+    use \App\Http\Controllers\Concerns\AppliesSort;
     protected $botUrl;
     protected $botPassword;
 
@@ -78,12 +80,9 @@ class WhatsAppController extends Controller
         $sortDesc = $request->get('sortDesc');
 
         if ($sortBy) {
-            foreach ($sortBy as $index => $column) {
-                $sortDirection = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'DESC' : 'ASC';
-                $query->orderBy($column, $sortDirection);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc);
         } else {
-            $query->orderBy('created_at', 'DESC');
+            $query = $query->orderBy('created_at', 'DESC');
         }
 
         if ($request->filled('sender')) {
@@ -101,7 +100,7 @@ class WhatsAppController extends Controller
         $perPage = (int) $request->get('itemsPerPage', 15);
         $perPage = min($perPage, 100);
 
-        return response()->json($query->paginate($perPage));
+        return new DataSetResource($query->paginate($perPage));
     }
 
     /**

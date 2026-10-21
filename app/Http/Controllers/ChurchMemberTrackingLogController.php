@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Http\Controllers\Concerns\AppliesSort;
+use App\Http\Resources\DataSetResource;
 use App\Models\Church\ChurchMember;
 use App\Models\Church\ChurchMemberTrackingLog;
 use Carbon\Carbon;
@@ -14,6 +16,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class ChurchMemberTrackingLogController extends Controller
 {
     use AppliesOrgPermissionScope;
+    use AppliesSort;
 
     protected $user;
 
@@ -34,24 +37,12 @@ class ChurchMemberTrackingLogController extends Controller
         $sortDesc = $request->get('sortDesc', ['true']);
 
         if (! empty($sortBy) && is_array($sortBy)) {
-            foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
-                $query->orderBy($field, $dir);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc);
         } else {
             $query->orderByDesc('contact_datetime')->orderByDesc('id');
         }
 
-        $total = $query->count();
-        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
-
-        return response()->json([
-            'data' => $logs->items(),
-            'total' => $total,
-            'current_page' => $logs->currentPage(),
-            'last_page' => $logs->lastPage(),
-            'per_page' => $logs->perPage(),
-        ]);
+        return new DataSetResource($query->paginate($itemsPerPage, ['*'], 'page', $page));
     }
 
     public function allTrackingLogsSummary(Request $request)
@@ -121,7 +112,6 @@ class ChurchMemberTrackingLogController extends Controller
 
         $query->where('created_by', $request->integer('consolidator_id'));
 
-        $total = (clone $query)->count();
         $page = $request->integer('page', 1);
         $itemsPerPage = $request->integer('itemsPerPage', 10);
         $sortBy = $request->input('sortBy', ['contact_datetime']);
@@ -129,23 +119,10 @@ class ChurchMemberTrackingLogController extends Controller
         $sortableFields = ['contact_datetime', 'created_at', 'medium'];
 
         if (is_array($sortBy)) {
-            foreach ($sortBy as $index => $field) {
-                if (! in_array($field, $sortableFields, true)) {
-                    continue;
-                }
-                $direction = isset($sortDesc[$index]) && $sortDesc[$index] == 'true'
-                    ? 'desc'
-                    : 'asc';
-                $query->orderBy($field, $direction);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc, $sortableFields);
         }
 
-        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
-
-        return response()->json([
-            'data' => $logs->items(),
-            'total' => $total,
-        ]);
+        return new DataSetResource($query->paginate($itemsPerPage, ['*'], 'page', $page));
     }
 
     public function storeTrackingLog(Request $request, $id)

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AppliesOrgPermissionScope;
+use App\Http\Controllers\Concerns\AppliesSort;
+use App\Http\Resources\DataSetResource;
 use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Church\ChurchMember;
 use App\Models\Church\ChurchMemberConsolidatorLog;
@@ -18,6 +20,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class ChurchMemberController extends Controller
 {
     use AppliesOrgPermissionScope;
+    use AppliesSort;
 
     protected $user;
 
@@ -49,9 +52,7 @@ class ChurchMemberController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->has('org_id') && !empty($request->org_id)) {
-            $query->where('org_id', $request->org_id);
-        }
+        $query = $this->applyOrgIdFilter($query, $request);
 
         if ($request->has('conso_sheet_id') && !empty($request->conso_sheet_id)) {
             $query->where('conso_sheet_id', $request->conso_sheet_id);
@@ -99,15 +100,7 @@ class ChurchMemberController extends Controller
         $allowedSortColumns = ['id', 'name', 'last_name', 'cellphone', 'status', 'org_id', 'last_contacted', 'created_at'];
 
         if (!empty($sortBy)) {
-            $columns = is_array($sortBy) ? $sortBy : [$sortBy];
-            $directions = (!empty($sortDesc) && is_array($sortDesc)) ? $sortDesc : [];
-            foreach ($columns as $index => $column) {
-                if (!is_string($column) || !in_array($column, $allowedSortColumns)) {
-                    continue;
-                }
-                $dir = (isset($directions[$index]) && $directions[$index] == 'true') ? 'desc' : 'asc';
-                $query->orderBy($column, $dir);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc, $allowedSortColumns);
         } else {
             $query->orderByDesc('last_contacted');
         }
@@ -126,7 +119,7 @@ class ChurchMemberController extends Controller
             return response()->json(['data' => $query->get()]);
         }
 
-        return response()->json($query->paginate((int) $itemsPerPage));
+        return new DataSetResource($query->paginate((int) $itemsPerPage));
     }
 
     public function show($id)
@@ -477,19 +470,10 @@ $member = ChurchMember::create($data);
         $sortDesc = $request->get('sortDesc', [true]);
 
         if (!empty($sortBy) && is_array($sortBy)) {
-            foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
-                $query->orderBy($field, $dir);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc);
         }
 
-        $total = $query->count();
-        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
-
-        return response()->json([
-            'data' => $logs->items(),
-            'total' => $total,
-        ]);
+        return new DataSetResource($query->paginate($itemsPerPage, ['*'], 'page', $page));
     }
 
     public function trackingLogsIndex(Request $request)
@@ -545,19 +529,10 @@ $member = ChurchMember::create($data);
         $sortDesc = $request->get('sortDesc', [true]);
 
         if (!empty($sortBy) && is_array($sortBy)) {
-            foreach ($sortBy as $index => $field) {
-                $dir = (isset($sortDesc[$index]) && $sortDesc[$index] == 'true') ? 'desc' : 'asc';
-                $query->orderBy($field, $dir);
-            }
+            $query = $this->applySort($query, $sortBy, $sortDesc);
         }
 
-        $total = $query->count();
-        $logs = $query->paginate($itemsPerPage, ['*'], 'page', $page);
-
-        return response()->json([
-            'data' => $logs->items(),
-            'total' => $total,
-        ]);
+        return new DataSetResource($query->paginate($itemsPerPage, ['*'], 'page', $page));
     }
 
     /**
