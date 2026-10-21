@@ -3,8 +3,6 @@
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
-use Monolog\Logger;
-use App\Logging\DatabaseHandler;
 
 return [
 
@@ -61,11 +59,7 @@ return [
 
         'database' => [
             'driver' => 'custom',
-            'via' => function () {
-                $logger = new Logger('database');
-                $logger->pushHandler(new DatabaseHandler());
-                return $logger;
-            },
+            'via' => \App\Logging\DatabaseLogger::class,
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
