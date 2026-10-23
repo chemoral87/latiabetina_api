@@ -224,7 +224,7 @@ class ChurchEventController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        Log::info('ChurchEventController@store', $request->all());
+     
 
         $data = $request->validate([
             'name' => 'required|string|max:255',

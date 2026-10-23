@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class LogEntryController extends Controller
 {
+    use \App\Http\Controllers\Concerns\AppliesSort;
+
     public function index(Request $request)
     {
         $query = LogEntry::query();
@@ -33,17 +35,9 @@ class LogEntryController extends Controller
             $query->where('level', $level);
         }
 
-        if ($sortBy) {
-            $columns = is_array($sortBy) ? $sortBy : [$sortBy];
-            $directions = (is_array($sortDesc) ? $sortDesc : []);
-            foreach ($columns as $index => $column) {
-                if (!in_array($column, ['id', 'level', 'channel', 'message', 'created_at'], true)) {
-                    continue;
-                }
-                $dir = (isset($directions[$index]) && $directions[$index] == 'true') ? 'desc' : 'asc';
-                $query->orderBy($column, $dir);
-            }
-        } else {
+        $this->applySort($query, $sortBy, $sortDesc, ['id', 'level', 'channel', 'message', 'created_at']);
+
+        if (empty($sortBy)) {
             $query->orderByDesc('created_at');
         }
 
@@ -59,7 +53,7 @@ class LogEntryController extends Controller
 
         $page = $request->get('page', 1);
         $paginated = $query->paginate((int) $itemsPerPage, ['*'], 'page', (int) $page);
-        $this->truncateContexts($paginated->getCollection());
+        $this->truncateContexts($paginated->items());
         return new DataSetResource($paginated);
     }
 

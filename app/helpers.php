@@ -50,7 +50,6 @@ function saveBlob($blob, $path, $file_to_delete = null) {
 }
 
 function saveS3Blob($blob, string $path, ?string $file_to_delete = null): ?string {
-  \Illuminate\Support\Facades\Log::info("saveS3Blob started", ['path' => $path, 'has_blob' => !empty($blob)]);
   $d = app()->environment();
   $folder = Carbon::now()->format("Ymd") . "/";
   $name = $d . "/" . $path . $folder . Str::uuid()->getHex()->toString() . '.webp';
@@ -114,20 +113,12 @@ function temporaryUrlS3($path) {
     // Check if the temporary URL is already cached
     if (Cache::has($cacheKey)) {
       $cached = Cache::get($cacheKey);
-      \Illuminate\Support\Facades\Log::info('temporaryUrlS3: cache hit', [
-        'path' => $path,
-        'cache_key' => $cacheKey,
-        'url_prefix' => substr($cached ?? '', 0, 80),
-      ]);
+    
       return $cached;
     }
     $temporaryUrl = Storage::disk('s3')->temporaryUrl($path, now()->addDays(7));
     Cache::put($cacheKey, $temporaryUrl, $cacheTtl);
-    \Illuminate\Support\Facades\Log::info('temporaryUrlS3: new URL generated', [
-      'path' => $path,
-      'cache_key' => $cacheKey,
-      'url_prefix' => substr($temporaryUrl ?? '', 0, 80),
-    ]);
+ 
     return $temporaryUrl;
   }
   return "";
