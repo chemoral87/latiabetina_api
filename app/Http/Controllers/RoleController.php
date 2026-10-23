@@ -13,7 +13,7 @@ class RoleController extends Controller {
   use \App\Http\Controllers\Concerns\AppliesSort;
   // https://codingdriver.com/laravel-user-roles-and-permissions-tutorial-with-example.html
   public function index(Request $request) { 
-    $query = new Role;
+    $query = Role::query();
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
     $sortDesc = $request->get('sortDesc');
@@ -23,6 +23,7 @@ class RoleController extends Controller {
     if ($filter) {
       $query->where("name", "like", "%" . $filter . "%");
     }
+
 
     $roles = $query->with("permissions")->paginate($itemsPerPage);
     return new DataSetResource($roles);
