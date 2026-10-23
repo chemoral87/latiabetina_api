@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller {
-  use \App\Http\Controllers\Concerns\AppliesSort;
+  use \App\Http\Controllers\Concerns\AppliesSort; 
   public function index(Request $request) {
-    $query = Permission::query();
+    $query = Permission::query(); 
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');
     $sortDesc = $request->get('sortDesc');

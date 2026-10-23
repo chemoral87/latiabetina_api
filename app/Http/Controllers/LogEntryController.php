@@ -49,6 +49,7 @@ class LogEntryController extends Controller
 
         if ((int) $itemsPerPage === -1 || $itemsPerPage === '-1') {
             $all = $query->get();
+            $this->truncateContexts($all);
             return response()->json([
                 'data' => $all,
                 'total' => $all->count(),
@@ -58,12 +59,53 @@ class LogEntryController extends Controller
 
         $page = $request->get('page', 1);
         $paginated = $query->paginate((int) $itemsPerPage, ['*'], 'page', (int) $page);
+        $this->truncateContexts($paginated->getCollection());
         return new DataSetResource($paginated);
     }
 
     public function show($id)
     {
-        return response()->json(LogEntry::findOrFail($id));
+        $entry = LogEntry::findOrFail($id);
+        $this->truncateContexts(collect([$entry]));
+        return response()->json($entry);
+    }
+
+    /**
+     * Recorta el contexto JSON a config('log-entry.context_max_chars') caracteres.
+     * El recorte se hace en el backend para que el limite no viva en el frontend.
+     */
+    private function truncateContexts(iterable $entries): void
+    {
+        $max = (int) config('log-entry.context_max_chars', 1000);
+
+        foreach ($entries as $entry) {
+            $context = $entry->context;
+            if ($context === null) {
+                continue;
+            }
+
+            $json = is_string($context)
+                ? $context
+                : json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+            if ($json === false || mb_strlen($json) <= $max) {
+                continue;
+            }
+
+            $entry->context = mb_substr($json, 0, $max) . '…';
+        }
+    }
+
+    public function destroyMany(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = LogEntry::whereIn('id', $validated['ids'])->delete();
+
+        return response()->json(['deleted' => $deleted]);
     }
 
     public function testError()

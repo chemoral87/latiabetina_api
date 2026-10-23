@@ -169,6 +169,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/', 'index')->middleware('permission_org:log-entry-index');
         Route::get('/{id}', 'show')->middleware('permission_org:log-entry-index');
         Route::post('/test-error', 'testError')->middleware('permission_org:log-entry-index');
+        Route::delete('/bulk', 'destroyMany')->middleware('permission_org:log-entry-index');
     });
 
     Route::prefix('permission')->controller(PermissionController::class)->group(function () {

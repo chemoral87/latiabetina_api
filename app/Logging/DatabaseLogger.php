@@ -2,7 +2,7 @@
 
 namespace App\Logging;
 
-use Monolog\Handler\DatabaseHandler;
+use App\Logging\DatabaseHandler;
 use Monolog\Logger;
 
 class DatabaseLogger
