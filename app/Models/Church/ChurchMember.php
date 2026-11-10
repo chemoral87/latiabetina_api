@@ -27,6 +27,7 @@ class ChurchMember extends Model implements AuditableContract
         'last_name',
         'second_last_name',
         'years_old',
+        'gender',
         'number_of_children',
         'cellphone',
         'address',

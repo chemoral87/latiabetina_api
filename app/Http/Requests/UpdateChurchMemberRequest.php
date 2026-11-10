@@ -21,6 +21,7 @@ final class UpdateChurchMemberRequest extends FormRequest
             'second_last_name' => 'nullable|string|max:255',
             'cellphone' => 'nullable|string|max:50',
             'years_old' => 'nullable|integer|min:0|max:150',
+            'gender' => 'nullable|in:male,female',
             'number_of_children' => 'nullable|integer|min:0',
             'marriage_status' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',

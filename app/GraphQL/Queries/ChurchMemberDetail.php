@@ -101,6 +101,7 @@ final class ChurchMemberDetail
             'last_name' => $member->last_name,
             'second_last_name' => $member->second_last_name,
             'years_old' => $member->years_old,
+            'gender' => $member->gender,
             'number_of_children' => $member->number_of_children,
             'cellphone' => $member->cellphone,
             'address' => $member->address,

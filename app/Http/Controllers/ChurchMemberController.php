@@ -62,6 +62,10 @@ class ChurchMemberController extends Controller
             $query->whereNotNull('cellphone')->where('cellphone', '!=', '');
         }
 
+        if ($request->has('gender') && !empty($request->gender)) {
+            $query->where('gender', $request->gender);
+        }
+
        if ($request->has('filter') && !empty($request->filter)) {
            $term = '%' . $request->filter . '%';
            $query->where(function ($q) use ($term) {
