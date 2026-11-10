@@ -105,15 +105,6 @@ class ChurchMemberController extends Controller
             $query->orderByDesc('last_contacted');
         }
 
-        Log::info('ChurchMember index', [
-            'user_id'  => $this->user?->id,
-            'has_all'  => $hasAll,
-            'mine'     => $request->boolean('mine'),
-            'params'   => $request->query(),
-            'sql'      => $query->toSql(),
-            'bindings' => $query->getBindings(),
-        ]);
-
         $itemsPerPage = $request->get('itemsPerPage', 10);
         if ($itemsPerPage === '-1') {
             return response()->json(['data' => $query->get()]);
@@ -150,10 +141,7 @@ class ChurchMemberController extends Controller
                 $path = "ORG-{$request->org_id}{$this->path}";
                 $treatedImage = treatImage($request->url_image, 95);
                 $data['url_image'] = saveS3Blob($treatedImage, $path);
-                Log::info('ChurchMember create: image uploaded', [
-                    'org_id' => $request->org_id,
-                    'path'   => $data['url_image'],
-                ]);
+          
             } catch (\Throwable $e) {
                 Log::error('ChurchMember create: image processing failed', [
                     'org_id'     => $request->org_id,

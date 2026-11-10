@@ -129,9 +129,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
                 if (!$this->isProductionEnvironment()) {
                     $effectivePhone = config('services.whatsapp.test_phone', '8120221172');
                     if ($originalPhone !== $effectivePhone) {
-                        Log::info("WhatsApp Job [non-prod] redirecting {$originalPhone} → {$effectivePhone}", [
-                            'env' => app()->environment(),
-                        ]);
+              
                         // Annotate body so /whatsapp logs show original intent
                         $finalMessage .= "\n\n[Redirigido en " . app()->environment() . " de {$originalPhone} a {$effectivePhone}]";
                     }

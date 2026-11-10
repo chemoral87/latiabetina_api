@@ -9,6 +9,7 @@ use App\Http\Controllers\Concerns\AppliesSort;
 use App\Http\Resources\DataSetResource;
 use App\Models\ConsoSheet;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -116,7 +117,7 @@ class ConsoSheetController extends Controller
     public function create(Request $request)
     {
         $request->validate([
-            'org_id'       => 'required|exists:organizations,id',
+            'org_id'       => ['required', 'exists:organizations,id', Rule::in($this->user->getOrgsByPermission('conso-sheet-create'))],
             'folio_number' => 'required|string|unique:conso_sheets',
             'date'         => 'required|date',
             'how_did_you_hear'           => 'nullable|string|max:255',
@@ -134,10 +135,11 @@ class ConsoSheetController extends Controller
 
     public function update(Request $request, $id)
     {
-        $sheet = ConsoSheet::findOrFail($id);
+        // Only sheets of orgs where the user holds conso-sheet-update are editable (404 otherwise).
+        $sheet = $this->findInScope($id, 'conso-sheet-update');
 
         $request->validate([
-            'org_id'       => 'sometimes|exists:organizations,id',
+            'org_id'       => ['sometimes', 'exists:organizations,id', Rule::in($this->user->getOrgsByPermission('conso-sheet-update'))],
             'folio_number' => 'required|string|unique:conso_sheets,folio_number,' . $id,
             'date'         => 'required|date',
             'how_did_you_hear'           => 'nullable|string|max:255',
@@ -152,10 +154,19 @@ class ConsoSheetController extends Controller
 
     public function delete($id)
     {
-        $sheet = ConsoSheet::find($id);
-        if ($sheet) {
-            $sheet->delete();
-        }
+        // Only sheets of orgs where the user holds conso-sheet-delete are removable (404 otherwise).
+        $sheet = $this->findInScope($id, 'conso-sheet-delete');
+        $sheet->delete();
+
         return response()->json(['success' => __('messa.conso_sheet_delete')]);
+    }
+
+    /**
+     * Resolve a sheet restricted to the orgs where the user holds $permission.
+     * Out-of-scope or missing ids both yield 404, so record existence is not leaked.
+     */
+    private function findInScope($id, string $permission): ConsoSheet
+    {
+        return $this->applyOrgPermissionScope(ConsoSheet::query(), $this->user, $permission)->findOrFail($id);
     }
 }

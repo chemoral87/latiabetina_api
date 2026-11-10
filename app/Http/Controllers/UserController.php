@@ -18,9 +18,6 @@ class UserController extends Controller
 {
     use \App\Http\Controllers\Concerns\AppliesSort;
   public function index(Request $request) {
-
-    // Log::info($request);
-
     $query = User::query();
     $itemsPerPage = $request->itemsPerPage;
     $sortBy = $request->get('sortBy');

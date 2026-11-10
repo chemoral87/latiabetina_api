@@ -5,6 +5,7 @@ Permiso `conso-sheet-delete` en la API.
 ## Files
 
 - `routes\api.php` (middleware `permission_org:conso-sheet-delete`)
+- `app\Http\Controllers\ConsoSheetController.php` (`delete` resuelve el registro con `findInScope($id, 'conso-sheet-delete')`)
 
 ## Routes protected
 
@@ -13,6 +14,6 @@ Permiso `conso-sheet-delete` en la API.
 ## Enforced by
 
 - `app\Http\Middleware\CheckOrgPermission.php` (middleware `permission_org`)
-- ⚠️ Capa latente: `app\Policies\ConsoSheetPolicy.php` define `delete` con `conso-sheet-delete` (por org del registro), pero está registrada en `AuthServiceProvider` sin invocarse (no hay `->can()`, `Gate::` ni `authorize()` activos); hoy la única exigencia efectiva es el middleware.
+- `ConsoSheetController::findInScope()` — aplica `AppliesOrgPermissionScope` con `conso-sheet-delete` sobre el `org_id` del registro; fuera de alcance o inexistente → 404
 
-> Nota: ConsoSheetController aplica el scope por organización con `conso-sheet-index` (no `conso-sheet-delete`).
+> Nota: `app\Policies\ConsoSheetPolicy.php` define `delete` por org del registro, pero sigue sin invocarse; la exigencia efectiva es el middleware más `findInScope()`. Borrar un conso_sheet elimina en cascada sus `church_members` (`conso_sheet_id` con `cascadeOnDelete`).

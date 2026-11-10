@@ -5,6 +5,7 @@ Permiso `conso-sheet-update` en la API.
 ## Files
 
 - `routes\api.php` (middleware `permission_org:conso-sheet-update`)
+- `app\Http\Controllers\ConsoSheetController.php` (`update` resuelve el registro con `findInScope($id, 'conso-sheet-update')` y valida `org_id` con `Rule::in($user->getOrgsByPermission('conso-sheet-update'))`)
 
 ## Routes protected
 
@@ -13,6 +14,7 @@ Permiso `conso-sheet-update` en la API.
 ## Enforced by
 
 - `app\Http\Middleware\CheckOrgPermission.php` (middleware `permission_org`)
-- ⚠️ Capa latente: `app\Policies\ConsoSheetPolicy.php` define `update` con `conso-sheet-update` (por org del registro), pero está registrada en `AuthServiceProvider` sin invocarse (no hay `->can()`, `Gate::` ni `authorize()` activos); hoy la única exigencia efectiva es el middleware.
+- `ConsoSheetController::findInScope()` — aplica `AppliesOrgPermissionScope` con `conso-sheet-update` sobre el `org_id` del registro; fuera de alcance o inexistente → 404
+- Regla `Rule::in` en `org_id` — no se puede mover el registro a una org donde el usuario no tenga `conso-sheet-update` (422)
 
-> Nota: ConsoSheetController aplica el scope por organización con `conso-sheet-index` (no `conso-sheet-update`).
+> Nota: `app\Policies\ConsoSheetPolicy.php` define `update` por org del registro, pero sigue sin invocarse; la exigencia efectiva es el middleware más `findInScope()`.
