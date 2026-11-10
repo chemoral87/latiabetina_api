@@ -130,4 +130,40 @@ final class User extends Authenticatable implements JWTSubject, AuditableContrac
   public function getAuditIgnore(): array {
     return ['password'];
   }
+
+  /**
+   * Consolidator groups this user belongs to.
+   */
+  public function consolidatorGroups(): BelongsToMany
+  {
+    return $this->belongsToMany(ConsolidatorGroup::class, 'consolidator_group_user')
+      ->withTimestamps();
+  }
+
+  /**
+   * All user IDs who share at least one consolidator group with this user
+   * (excluding the user themselves).
+   *
+   * @return int[]
+   */
+  public function groupMateIds(): array
+  {
+    $groupIds = $this->consolidatorGroups()->pluck('consolidator_groups.id')->all();
+
+    if (empty($groupIds)) {
+      return [];
+    }
+
+    return \App\Models\ConsolidatorGroup::query()
+      ->whereIn('id', $groupIds)
+      ->with('users:id')
+      ->get()
+      ->pluck('users')
+      ->flatten()
+      ->pluck('id')
+      ->unique()
+      ->reject(fn ($id) => $id === $this->id)
+      ->values()
+      ->all();
+  }
 }

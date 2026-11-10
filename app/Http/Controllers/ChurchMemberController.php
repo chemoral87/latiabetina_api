@@ -166,6 +166,31 @@ $data['created_by'] = $this->user->id;
 
 $member = ChurchMember::create($data);
 
+        // Auto-assign the creator as consolidator so group-mate expansion fires.
+        // This is a system action (not gated by church-member-consolidator-assign)
+        // so any user who can create a member gets tracked on it.
+        $member->consolidators()->sync([$this->user->id]);
+        ChurchMemberConsolidatorLog::create([
+            'church_member_id' => $member->id,
+            'consolidator_id'  => $this->user->id,
+            'action'           => 'assigned',
+            'changed_by'       => $this->user->id,
+        ]);
+
+        // Expand to consolidator group mates.
+        $groupMateIds = $this->collectGroupMateIds([$this->user->id], []);
+        if (!empty($groupMateIds)) {
+            $member->consolidators()->attach($groupMateIds);
+            foreach ($groupMateIds as $consolidatorId) {
+                ChurchMemberConsolidatorLog::create([
+                    'church_member_id' => $member->id,
+                    'consolidator_id'  => $consolidatorId,
+                    'action'           => 'assigned',
+                    'changed_by'       => $this->user->id,
+                ]);
+            }
+        }
+
         // ── WhatsApp bienvenida (no bloquea el response) ───────────────────
         // Se envía: "hola {name}, Bienvenido a la Iglesia Avivamiento Monterrey."
         // Solo si hay cellphone. Usa la misma infraestructura que WhatsAppController.php:43 (queue whatsapp)
@@ -365,6 +390,26 @@ $member = ChurchMember::create($data);
         $newIds = $candidateIds->toArray();
 
         $member->consolidators()->sync($newIds);
+
+        // Auto-assign consolidator group mates: if any of the newly assigned
+        // consolidators belong to a group, all other members of that group get
+        // added as consolidators too (without removing existing ones).
+        $groupMateIds = $this->collectGroupMateIds($newIds, $oldIds);
+        if (!empty($groupMateIds)) {
+            $currentIds = $member->consolidators()->pluck('users.id')->toArray();
+            $toAdd = array_values(array_diff($groupMateIds, $currentIds));
+            if (!empty($toAdd)) {
+                $member->consolidators()->attach($toAdd);
+                foreach ($toAdd as $consolidatorId) {
+                    ChurchMemberConsolidatorLog::create([
+                        'church_member_id' => $member->id,
+                        'consolidator_id'  => $consolidatorId,
+                        'action'           => 'assigned',
+                        'changed_by'       => $this->user->id,
+                    ]);
+                }
+            }
+        }
 
         // Log assignments and unassignments
         $addedIds = array_values(array_diff($newIds, $oldIds));
@@ -586,13 +631,57 @@ $member = ChurchMember::create($data);
 
     private function applyMineScope($query)
     {
+        $groupMateIds = $this->user->groupMateIds();
+
         return $query->where(function ($q) {
             $q->where('created_by', $this->user->id)
               ->orWhereHas('consoSheet', function ($q) {
                 $q->where('created_by', $this->user->id);
-            })->orWhereHas('consolidators', function ($q) {
+              })->orWhereHas('consolidators', function ($q) {
                 $q->where('users.id', $this->user->id);
-            });
+              });
+        })->orWhereHas('consolidators', function ($q) use ($groupMateIds) {
+            if (!empty($groupMateIds)) {
+                $q->whereIn('users.id', $groupMateIds);
+            } else {
+                $q->whereRaw('1 = 0');
+            }
         });
+    }
+
+    /**
+     * Collect group-mate IDs for all newly assigned consolidators (not already present).
+     *
+     * @param  int[]  $newIds
+     * @param  int[]  $oldIds
+     * @return int[]
+     */
+    private function collectGroupMateIds(array $newIds, array $oldIds): array
+    {
+        $addedIds = array_values(array_diff($newIds, $oldIds));
+        if (empty($addedIds)) {
+            return [];
+        }
+
+        $groupIds = \App\Models\ConsolidatorGroup::query()
+            ->whereHas('users', fn ($q) => $q->whereIn('users.id', $addedIds))
+            ->pluck('id')
+            ->all();
+
+        if (empty($groupIds)) {
+            return [];
+        }
+
+        return \App\Models\ConsolidatorGroup::query()
+            ->whereIn('id', $groupIds)
+            ->with('users:id')
+            ->get()
+            ->pluck('users')
+            ->flatten()
+            ->pluck('id')
+            ->unique()
+            ->reject(fn ($id) => in_array($id, $newIds))
+            ->values()
+            ->all();
     }
 }

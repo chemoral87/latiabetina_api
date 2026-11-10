@@ -11,6 +11,7 @@ use App\Http\Controllers\ChurchMemberController;
 use App\Http\Controllers\ChurchMemberMedalController;
 use App\Http\Controllers\ChurchMemberTrackingLogController;
 use App\Http\Controllers\ConsoSheetController;
+use App\Http\Controllers\ConsolidatorGroupController;
 use App\Http\Controllers\ExpenseCategoriesController;
 use App\Http\Controllers\ExpenseConceptsController;
 use App\Http\Controllers\ExpensesController;
@@ -299,6 +300,14 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/{id}/medals', 'store')->middleware('permission_org:church-member-medal-create');
         Route::delete('/{id}/medals/{medalId}', 'destroy')->middleware('permission_org:church-member-medal-delete');
         Route::get('/{id}/medal-logs', 'logs')->middleware('permission_org:church-member-medal-index');
+    });
+
+    Route::prefix('consolidator-group')->controller(ConsolidatorGroupController::class)->group(function () {
+        Route::get('/', 'index')->middleware('permission_org:consolidator-group-index');
+        Route::post('/', 'store')->middleware('permission_org:consolidator-group-manage');
+        Route::put('/{id}', 'update')->middleware('permission_org:consolidator-group-manage');
+        Route::delete('/{id}', 'destroy')->middleware('permission_org:consolidator-group-manage');
+        Route::put('/{id}/members', 'syncMembers')->middleware('permission_org:consolidator-group-manage');
     });
 
     Route::prefix('church-member')->controller(ChurchMemberTrackingLogController::class)->group(function () {
