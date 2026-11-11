@@ -166,21 +166,13 @@ $data['created_by'] = $this->user->id;
 
 $member = ChurchMember::create($data);
 
-        // Auto-assign the creator as consolidator so group-mate expansion fires.
-        // This is a system action (not gated by church-member-consolidator-assign)
-        // so any user who can create a member gets tracked on it.
-        $member->consolidators()->sync([$this->user->id]);
-        ChurchMemberConsolidatorLog::create([
-            'church_member_id' => $member->id,
-            'consolidator_id'  => $this->user->id,
-            'action'           => 'assigned',
-            'changed_by'       => $this->user->id,
-        ]);
-
-        // Expand to consolidator group mates.
+        // Expand to the creator's consolidator group mates. The creator is NOT
+        // added as a consolidator: they already keep visibility through
+        // created_by (applyMineScope), and listing them here would repeat the
+        // same person in "Creado por" and "Consolidadores".
         $groupMateIds = $this->collectGroupMateIds([$this->user->id], []);
         if (!empty($groupMateIds)) {
-            $member->consolidators()->attach($groupMateIds);
+            $member->consolidators()->sync($groupMateIds);
             foreach ($groupMateIds as $consolidatorId) {
                 ChurchMemberConsolidatorLog::create([
                     'church_member_id' => $member->id,
@@ -394,7 +386,12 @@ $member = ChurchMember::create($data);
         // Auto-assign consolidator group mates: if any of the newly assigned
         // consolidators belong to a group, all other members of that group get
         // added as consolidators too (without removing existing ones).
-        $groupMateIds = $this->collectGroupMateIds($newIds, $oldIds);
+        // The member creator is skipped: they already keep visibility through
+        // created_by and would otherwise be listed twice on the tracking row.
+        $groupMateIds = array_values(array_filter(
+            $this->collectGroupMateIds($newIds, $oldIds),
+            fn ($id) => (int) $id !== (int) $member->created_by,
+        ));
         if (!empty($groupMateIds)) {
             $currentIds = $member->consolidators()->pluck('users.id')->toArray();
             $toAdd = array_values(array_diff($groupMateIds, $currentIds));
@@ -633,19 +630,22 @@ $member = ChurchMember::create($data);
     {
         $groupMateIds = $this->user->groupMateIds();
 
-        return $query->where(function ($q) {
+        // Every branch must live inside the same group: a root-level orWhere
+        // would escape the outer constraints (org scope, find($id)) because
+        // `AND` binds tighter than `OR`.
+        return $query->where(function ($q) use ($groupMateIds) {
             $q->where('created_by', $this->user->id)
               ->orWhereHas('consoSheet', function ($q) {
                 $q->where('created_by', $this->user->id);
               })->orWhereHas('consolidators', function ($q) {
                 $q->where('users.id', $this->user->id);
+              })->orWhereHas('consolidators', function ($q) use ($groupMateIds) {
+                if (!empty($groupMateIds)) {
+                    $q->whereIn('users.id', $groupMateIds);
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
               });
-        })->orWhereHas('consolidators', function ($q) use ($groupMateIds) {
-            if (!empty($groupMateIds)) {
-                $q->whereIn('users.id', $groupMateIds);
-            } else {
-                $q->whereRaw('1 = 0');
-            }
         });
     }
 
