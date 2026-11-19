@@ -96,6 +96,7 @@ class ChurchMemberController extends Controller
                ->limit(1),
        ]);
         $query->with('creator:id,name,last_name')
+            ->with('creator.consolidatorGroups.users:id,name,last_name')
             ->with('consolidators:id,name,last_name');
 
         $sortBy = $request->get('sortBy');
@@ -165,23 +166,6 @@ if (!isset($data['status'])) {
 $data['created_by'] = $this->user->id;
 
 $member = ChurchMember::create($data);
-
-        // Expand to the creator's consolidator group mates. The creator is NOT
-        // added as a consolidator: they already keep visibility through
-        // created_by (applyMineScope), and listing them here would repeat the
-        // same person in "Creado por" and "Consolidadores".
-        $groupMateIds = $this->collectGroupMateIds([$this->user->id], []);
-        if (!empty($groupMateIds)) {
-            $member->consolidators()->sync($groupMateIds);
-            foreach ($groupMateIds as $consolidatorId) {
-                ChurchMemberConsolidatorLog::create([
-                    'church_member_id' => $member->id,
-                    'consolidator_id'  => $consolidatorId,
-                    'action'           => 'assigned',
-                    'changed_by'       => $this->user->id,
-                ]);
-            }
-        }
 
         // ── WhatsApp bienvenida (no bloquea el response) ───────────────────
         // Se envía: "hola {name}, Bienvenido a la Iglesia Avivamiento Monterrey."
@@ -635,7 +619,13 @@ $member = ChurchMember::create($data);
         // `AND` binds tighter than `OR`.
         return $query->where(function ($q) use ($groupMateIds) {
             $q->where('created_by', $this->user->id)
-              ->orWhereHas('consoSheet', function ($q) {
+              ->orWhere(function ($q) use ($groupMateIds) {
+                if (!empty($groupMateIds)) {
+                    $q->whereIn('created_by', $groupMateIds);
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+              })->orWhereHas('consoSheet', function ($q) {
                 $q->where('created_by', $this->user->id);
               })->orWhereHas('consolidators', function ($q) {
                 $q->where('users.id', $this->user->id);

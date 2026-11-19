@@ -97,6 +97,10 @@ final class ChurchMemberDetail
             'id' => $member->id,
             'org_id' => $member->org_id,
             'conso_sheet_id' => $member->conso_sheet_id,
+            'conso_sheet' => $member->consoSheet ? [
+                'id' => $member->consoSheet->id,
+                'folio_number' => $member->consoSheet->folio_number,
+            ] : null,
             'name' => $member->name,
             'last_name' => $member->last_name,
             'second_last_name' => $member->second_last_name,
