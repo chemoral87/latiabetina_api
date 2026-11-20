@@ -69,6 +69,7 @@ type ChurchMember {
   id: Int!
   org_id: Int
   conso_sheet_id: Int
+  conso_sheet: ConsoSheetRef
   name: String
   last_name: String
   second_last_name: String
@@ -94,6 +95,11 @@ type UserRef {
   last_name: String
   second_last_name: String
   email: String
+}
+
+type ConsoSheetRef {
+  id: Int!
+  folio_number: String
 }
 
 type TrackingLogPage {

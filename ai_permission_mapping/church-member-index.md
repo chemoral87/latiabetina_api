@@ -12,9 +12,6 @@ Permiso `church-member-index` en la API.
 
 - `GET /church-member -> ChurchMemberController@index`
 - `GET /church-member/{id} -> ChurchMemberController@show`
-- `POST /church-member -> ChurchMemberController@create`
-- `PUT /church-member/{id} -> ChurchMemberController@update`
-- `DELETE /church-member/{id} -> ChurchMemberController@delete`
 - `GET /church-member/{id}/consolidator-logs -> ChurchMemberController@consolidatorLogs`
 - `GET /church-member/{id}/tracking-logs -> ChurchMemberTrackingLogController@trackingLogs`
 
@@ -24,4 +21,4 @@ Permiso `church-member-index` en la API.
 - `app\Http\Controllers\Concerns\AppliesOrgPermissionScope.php` (filtra registros por los orgs del usuario; los controladores del módulo aplican el scope con `conso-sheet-index`)
 - ⚠️ Capa latente: `app\Policies\ChurchMemberPolicy.php` define `viewAny`/`view` con `church-member-index` (más `church-member-all`), pero está registrada en `AuthServiceProvider` sin invocarse (no hay `->can()`, `Gate::` ni `authorize()` activos); hoy la única exigencia efectiva es el middleware.
 
-> Nota: el CRUD de miembros de iglesia se protege con `church-member-index`, pero el scope por organización de los listados se aplica con `conso-sheet-index` (o `church-member-all` si el usuario lo tiene, vía `applyChurchMemberAllScope` / `hasChurchMemberAll`).
+> Nota: la lectura (index/show) se protege con `church-member-index`. Alta, edición y baja usan un solo permiso, `church-member-manage` (reemplaza `church-member-create`, `church-member-update` y `church-member-delete`). El scope por organización de los listados se aplica con `conso-sheet-index` (o `church-member-all` si el usuario lo tiene, vía `applyChurchMemberAllScope` / `hasChurchMemberAll`).

@@ -37,26 +37,26 @@ final class ChurchMemberPolicy
 
     public function create(User $user): bool
     {
-        return $this->hasAnyOrgAccess($user, 'church-member-create')
+        return $this->hasAnyOrgAccess($user, 'church-member-manage')
             || $this->hasAnyOrgAccess($user, 'church-member-all');
     }
 
     public function createForOrg(User $user, int $orgId): bool
     {
-        $orgIds = $user->getOrgsByPermission('church-member-create');
+        $orgIds = $user->getOrgsByPermission('church-member-manage');
         $allOrgIds = $user->getOrgsByPermission('church-member-all');
         return in_array($orgId, $orgIds) || in_array($orgId, $allOrgIds);
     }
 
     public function update(User $user, ChurchMember $member): bool
     {
-        return $this->hasOrgAccess($user, $member, 'church-member-update')
+        return $this->hasOrgAccess($user, $member, 'church-member-manage')
             || $this->hasOrgAccess($user, $member, 'church-member-all');
     }
 
     public function delete(User $user, ChurchMember $member): bool
     {
-        return $this->hasOrgAccess($user, $member, 'church-member-delete')
+        return $this->hasOrgAccess($user, $member, 'church-member-manage')
             || $this->hasOrgAccess($user, $member, 'church-member-all');
     }
 }

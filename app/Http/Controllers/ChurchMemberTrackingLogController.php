@@ -51,7 +51,9 @@ class ChurchMemberTrackingLogController extends Controller
             'year_month' => 'nullable|date_format:Y-m',
         ]);
 
-        $orgIds = $this->user->getOrgsByPermission('church-member-tracking-logs-all');
+        $orgIds = $this->hasChurchMemberAll()
+            ? $this->user->getOrgsByPermission('church-member-all')
+            : $this->user->getOrgsByPermission('church-member-index');
         $query = ChurchMemberTrackingLog::query()
             ->with(['creator:id,name,last_name,email']);
 
@@ -89,7 +91,9 @@ class ChurchMemberTrackingLogController extends Controller
             'consolidator_id' => 'required|integer',
         ]);
 
-        $orgIds = $this->user->getOrgsByPermission('church-member-tracking-logs-all');
+        $orgIds = $this->hasChurchMemberAll()
+            ? $this->user->getOrgsByPermission('church-member-all')
+            : $this->user->getOrgsByPermission('church-member-index');
         $query = ChurchMemberTrackingLog::query()
 ->with([
     'churchMember:id,name,last_name,cellphone',
@@ -188,6 +192,127 @@ class ChurchMemberTrackingLogController extends Controller
         $log->delete();
 
         return response()->json(['success' => 'Interacción eliminada exitosamente']);
+    }
+
+    // ── "My" endpoints for member tracking logs ──────────────────────
+
+    public function trackingLogsMyMember(Request $request, $id)
+    {
+        $member = $this->findMemberInMyScope($id);
+
+        $query = $member->trackingLogs()->with(['creator', 'churchMember:id,name,last_name,cellphone']);
+
+        $page = $request->get('page', 1);
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        $sortBy = $request->get('sortBy', ['contact_datetime']);
+        $sortDesc = $request->get('sortDesc', ['true']);
+
+        if (! empty($sortBy) && is_array($sortBy)) {
+            $query = $this->applySort($query, $sortBy, $sortDesc);
+        } else {
+            $query->orderByDesc('contact_datetime')->orderByDesc('id');
+        }
+
+        return new DataSetResource($query->paginate($itemsPerPage, ['*'], 'page', $page));
+    }
+
+    public function storeTrackingLogMyMember(Request $request, $id)
+    {
+        $member = $this->findMemberInMyScope($id);
+
+        $request->validate([
+            'contact_datetime' => 'required|date',
+            'medium' => 'required|in:whatsapp,llamada,presencial,sms',
+            'classification' => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description' => 'nullable|string|max:2000',
+        ]);
+
+        $log = $member->trackingLogs()->create([
+            'contact_datetime' => $request->contact_datetime,
+            'medium' => $request->medium,
+            'classification' => $request->classification,
+            'description' => $request->description,
+            'created_by' => $this->user->id,
+        ]);
+
+        return response()->json([
+            'success' => __('messa.church-member-tracking-log_create'),
+            'data' => $log->load('creator'),
+        ], 201);
+    }
+
+    public function updateTrackingLogMyMember(Request $request, $id, $logId)
+    {
+        $member = $this->findMemberInMyScope($id);
+
+        $log = $member->trackingLogs()->findOrFail($logId);
+
+        if ((int) $log->created_by !== (int) $this->user->id) {
+            return response()->json(['error' => 'No tienes permiso para editar esta interacción'], 403);
+        }
+
+        $request->validate([
+            'contact_datetime' => 'sometimes|date',
+            'medium' => 'sometimes|in:whatsapp,llamada,presencial,sms',
+            'classification' => 'nullable|in:CONTESTA,NO CONTESTA',
+            'description' => 'nullable|string|max:2000',
+        ]);
+
+        $log->update($request->only(['contact_datetime', 'medium', 'classification', 'description']));
+
+        return response()->json([
+            'success' => 'Interacción actualizada exitosamente',
+            'data' => $log->load('creator'),
+        ]);
+    }
+
+    public function deleteTrackingLogMyMember(Request $request, $id, $logId)
+    {
+        $member = $this->findMemberInMyScope($id);
+
+        $log = $member->trackingLogs()->findOrFail($logId);
+
+        if ((int) $log->created_by !== (int) $this->user->id) {
+            return response()->json(['error' => 'No tienes permiso para eliminar esta interacción'], 403);
+        }
+
+        $log->delete();
+
+        return response()->json(['success' => 'Interacción eliminada exitosamente']);
+    }
+
+    private function findMemberInMyScope($id): ChurchMember
+    {
+        $query = ChurchMember::query();
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-my-index');
+        $query = $this->applyMineScope($query);
+        return $query->findOrFail($id);
+    }
+
+    private function applyMineScope($query)
+    {
+        $groupMateIds = method_exists($this->user, 'groupMateIds') ? $this->user->groupMateIds() : [];
+
+        return $query->where(function ($q) use ($groupMateIds) {
+            $q->where('created_by', $this->user->id)
+              ->orWhere(function ($q) use ($groupMateIds) {
+                if (!empty($groupMateIds)) {
+                    $q->whereIn('created_by', $groupMateIds);
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+              })->orWhereHas('consoSheet', function ($q) {
+                $q->where('created_by', $this->user->id);
+              })->orWhereHas('consolidators', function ($q) {
+                $q->where('users.id', $this->user->id);
+              })->orWhereHas('consolidators', function ($q) use ($groupMateIds) {
+                if (!empty($groupMateIds)) {
+                    $q->whereIn('users.id', $groupMateIds);
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+              });
+        });
     }
 
     private function findMemberInScope($id): ChurchMember

@@ -44,10 +44,49 @@ class ChurchMemberController extends Controller
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
         }
 
-        if (!$hasAll && $request->boolean('mine')) {
+        return $this->listTrackingResponse($query, $request);
+    }
+
+    /**
+     * Manager tracking: every member in the caller's permitted orgs.
+     */
+    public function tracking(Request $request)
+    {
+        $query = ChurchMember::query();
+
+        if ($this->hasChurchMemberAll()) {
+            $query = $this->applyChurchMemberAllScope($query);
+        } else {
+            $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-index');
+        }
+
+        return $this->listTrackingResponse($query, $request);
+    }
+
+    /**
+     * Personal tracking: members created by the caller, on their conso-sheets,
+     * manually assigned to them, or created by their consolidator-group mates.
+     */
+    public function trackingMy(Request $request)
+    {
+        $query = ChurchMember::query();
+
+        if ($this->hasChurchMemberAll()) {
+            $query = $this->applyChurchMemberAllScope($query);
+        } else {
+            $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-my-index');
             $query = $this->applyMineScope($query);
         }
 
+        return $this->listTrackingResponse($query, $request);
+    }
+
+    /**
+     * Shared filters, subselects, eager loads, sort and pagination for the
+     * tracking list endpoints.
+     */
+    private function listTrackingResponse($query, Request $request)
+    {
         if ($request->has('status') && !empty($request->status)) {
             $query->where('status', $request->status);
         }
@@ -66,14 +105,15 @@ class ChurchMemberController extends Controller
             $query->where('gender', $request->gender);
         }
 
-       if ($request->has('filter') && !empty($request->filter)) {
-           $term = '%' . $request->filter . '%';
-           $query->where(function ($q) use ($term) {
-               $q->where('name', 'like', $term)
-                 ->orWhere('last_name', 'like', $term)
-                 ->orWhere('cellphone', 'like', $term);
-           });
-       }
+        if ($request->has('filter') && !empty($request->filter)) {
+            $term = '%' . $request->filter . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', $term)
+                  ->orWhere('last_name', 'like', $term)
+                  ->orWhere('cellphone', 'like', $term);
+            });
+        }
+
 
         $query->addSelect([
            'last_contacted' => ChurchMemberTrackingLog::query()
@@ -95,9 +135,14 @@ class ChurchMemberController extends Controller
                ->orderByDesc('church_member_consolidator_logs.id')
                ->limit(1),
        ]);
-        $query->with('creator:id,name,last_name')
-            ->with('creator.consolidatorGroups.users:id,name,last_name')
-            ->with('consolidators:id,name,last_name');
+        $query->with(['creator' => function ($q) {
+            $q->select('id', 'name', 'last_name')
+                ->with(['consolidatorGroups' => function ($g) {
+                    $g->select('id')->with(['users' => function ($u) {
+                        $u->select('id', 'name', 'last_name');
+                    }]);
+                }]);
+        }])->with('consolidators:id,name,last_name');
 
         $sortBy = $request->get('sortBy');
         $sortDesc = $request->get('sortDesc');
@@ -118,8 +163,7 @@ class ChurchMemberController extends Controller
         return new DataSetResource($query->paginate((int) $itemsPerPage));
     }
 
-    public function show($id)
-    {
+    public function show($id)    {
         $query = ChurchMember::query();
         // church-member-all applies org scope based on permitted orgs
         if ($this->hasChurchMemberAll()) {
@@ -132,7 +176,7 @@ class ChurchMemberController extends Controller
             ->with(['consolidators:id,name,last_name,second_last_name,email'])
             ->find($id);
         if (!$member) {
-            abort(404, 'Miembro no encontrado o no tienes acceso a esta organización.');
+            abort(404, 'Miembro no encontrado o no tienes acceso a esta organizaciÃ³n.');
         }
         return response()->json($member);
     }
@@ -167,8 +211,8 @@ $data['created_by'] = $this->user->id;
 
 $member = ChurchMember::create($data);
 
-        // ── WhatsApp bienvenida (no bloquea el response) ───────────────────
-        // Se envía: "hola {name}, Bienvenido a la Iglesia Avivamiento Monterrey."
+        // â”€â”€ WhatsApp bienvenida (no bloquea el response) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Se envÃ­a: "hola {name}, Bienvenido a la Iglesia Avivamiento Monterrey."
         // Solo si hay cellphone. Usa la misma infraestructura que WhatsAppController.php:43 (queue whatsapp)
         if (!empty($member->cellphone)) {
             try {
@@ -192,7 +236,7 @@ $member = ChurchMember::create($data);
                     ]);
                 }
             } catch (\Throwable $e) {
-                // No romper la creación si falla el dispatch
+                // No romper la creaciÃ³n si falla el dispatch
                 Log::error('WhatsApp welcome dispatch failed: ' . $e->getMessage(), [
                     'member_id' => $member->id,
                     'phone'     => $member->cellphone,
@@ -274,7 +318,7 @@ $member = ChurchMember::create($data);
         return response()->json(['success' => __('messa.church-member_delete')]);
     }
 
-    // ── Clasificación (estado) ──────────────────────────────────────────
+    // â”€â”€ ClasificaciÃ³n (estado) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function updateStatus(Request $request, $id)
     {
@@ -317,7 +361,7 @@ $member = ChurchMember::create($data);
         return response()->json($logs);
     }
 
-    // ── Consolidadores ────────────────────────────────────────────────
+    // â”€â”€ Consolidadores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function consolidators($id)
     {
@@ -335,7 +379,7 @@ $member = ChurchMember::create($data);
         $member = $this->findMemberInScope($id);
 
         // Some clients accidentally double-wrap the payload as
-        // {"consolidator_ids": {"consolidator_ids": [...]}} — unwrap it before validating.
+        // {"consolidator_ids": {"consolidator_ids": [...]}} â€” unwrap it before validating.
         $payload = $request->input('consolidator_ids');
         if (is_array($payload) && array_key_exists('consolidator_ids', $payload)) {
             $request->merge(['consolidator_ids' => $payload['consolidator_ids']]);
@@ -494,27 +538,23 @@ $member = ChurchMember::create($data);
         return new DataSetResource($query->paginate($itemsPerPage, ['*'], 'page', $page));
     }
 
-    public function trackingLogsIndex(Request $request)
+    public function trackingLogsMy(Request $request)
     {
         $query = ChurchMemberTrackingLog::query()
             ->with('churchMember:id,name,last_name,cellphone')
             ->where('created_by', $this->user->id);
 
         // Filter by member's org based on permission
-        if ($this->hasChurchMemberAll()) {
-            $orgIds = $this->user->getOrgsByPermission('church-member-all');
-            if (!empty($orgIds)) {
-                $query->whereHas('churchMember', function ($q) use ($orgIds) {
-                    $q->whereIn('org_id', $orgIds);
-                });
-            }
+        $orgIds = $this->hasChurchMemberAll()
+            ? $this->user->getOrgsByPermission('church-member-all')
+            : $this->user->getOrgsByPermission('church-member-my-index');
+
+        if (empty($orgIds)) {
+            $query->whereRaw('1 = 0');
         } else {
-            $orgIds = $this->user->getOrgsByPermission('conso-sheet-index');
-            if (!empty($orgIds)) {
-                $query->whereHas('churchMember', function ($q) use ($orgIds) {
-                    $q->whereIn('org_id', $orgIds);
-                });
-            }
+            $query->whereHas('churchMember', function ($q) use ($orgIds) {
+                $q->whereIn('org_id', $orgIds);
+            });
         }
 
         if ($request->has('filter') && !empty($request->filter)) {
@@ -583,6 +623,181 @@ $member = ChurchMember::create($data);
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
         }
         return $query->findOrFail($id);
+    }
+
+    // ── "My" endpoints (consolidation-my pages) ──────────────────────────
+
+    /**
+     * List members visible to the caller through the mine scope, optionally
+     * restricted to one of their sheets.
+     */
+    public function indexMy(Request $request)
+    {
+        $query = ChurchMember::query();
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-my-index');
+        $query = $this->applyMineScope($query);
+
+        if ($request->filled('conso_sheet_id')) {
+            $query->where('conso_sheet_id', $request->conso_sheet_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        if ($itemsPerPage === '-1') {
+            return response()->json(['data' => $query->get()]);
+        }
+
+        return new DataSetResource($query->paginate((int) $itemsPerPage));
+    }
+
+    /**
+     * Show one member the caller can see through the mine scope.
+     */
+    public function showMy($id)
+    {
+        $member = $this->findMemberInMyScope($id);
+        return response()->json(
+            $member->load(['creator:id,name,last_name', 'consolidators:id,name,last_name,second_last_name,email'])
+        );
+    }
+
+    /**
+     * Create a member. The conso sheet (when given) must be visible to the
+     * caller through the mine scope.
+     */
+    public function createMy(\App\Http\Requests\StoreChurchMemberRequest $request)
+    {
+        $data = $request->validated();
+
+        if (!empty($data['conso_sheet_id'])) {
+            $sheet = $this->findMySheetOrFail((int) $data['conso_sheet_id']);
+            $data['org_id'] = $sheet->org_id;
+        }
+
+        $data['created_by'] = $this->user->id;
+        if (!isset($data['status'])) {
+            $data['status'] = 'ACTIVO';
+        }
+
+        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+            try {
+                $path = "ORG-{$data['org_id']}{$this->path}";
+                $treatedImage = treatImage($request->url_image, 95);
+                $data['url_image'] = saveS3Blob($treatedImage, $path);
+                if ($data['url_image'] === null) {
+                    unset($data['url_image']);
+                }
+            } catch (\Throwable $e) {
+                unset($data['url_image']);
+            }
+        } elseif ($request->filled('url_image')) {
+            unset($data['url_image']);
+        }
+
+        $member = ChurchMember::create($data);
+        return response()->json([
+            'success' => __('messa.church-member_create'),
+            'data' => $member->append('url_image_s3'),
+        ], 201);
+    }
+
+    /**
+     * Update a member visible to the caller through the mine scope.
+     */
+    public function updateMy(\App\Http\Requests\UpdateChurchMemberRequest $request, $id)
+    {
+        $member = $this->findMemberInMyScope($id);
+
+        $data = $request->validated();
+        unset($data['conso_sheet_id'], $data['created_by'], $data['org_id']);
+
+        if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
+            try {
+                $path = "ORG-{$member->org_id}{$this->path}";
+                $treatedImage = treatImage($request->url_image, 95);
+                $data['url_image'] = saveS3Blob($treatedImage, $path, $member->url_image);
+                if ($data['url_image'] === null) {
+                    unset($data['url_image']);
+                }
+            } catch (\Throwable $e) {
+                unset($data['url_image']);
+            }
+        } elseif ($request->filled('url_image')) {
+            unset($data['url_image']);
+        }
+
+        $member->update($data);
+        return response()->json([
+            'success' => __('messa.church-member_update'),
+            'data' => $member->append('url_image_s3'),
+        ]);
+    }
+
+    /**
+     * Delete a member visible to the caller through the mine scope.
+     */
+    public function deleteMy($id)
+    {
+        $member = $this->findMemberInMyScope($id);
+        $member->delete();
+        return response()->json(['success' => __('messa.church-member_delete')]);
+    }
+
+    /**
+     * Update status for a member visible to the caller through the mine scope.
+     */
+    public function updateStatusMy(Request $request, $id)
+    {
+        $member = $this->findMemberInMyScope($id);
+
+        $request->validate([
+            'status' => 'required|in:ACTIVO,NO CONTESTA,NO MOLESTAR,VISITA',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $newStatus = $request->status;
+        $oldStatus = $member->status ?? 'ACTIVO';
+
+        if ($oldStatus !== $newStatus) {
+            $member->status = $newStatus;
+            $member->save();
+
+            $member->statusLogs()->create([
+                'new_status' => $newStatus,
+                'reason'     => $request->reason,
+                'changed_by' => $this->user->id,
+            ]);
+        }
+
+        return response()->json([
+            'success' => __('messa.church-member_status_update'),
+            'data'    => $member,
+        ]);
+    }
+
+    private function findMemberInMyScope($id): ChurchMember
+    {
+        $query = ChurchMember::query();
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-my-index');
+        $query = $this->applyMineScope($query);
+        return $query->findOrFail($id);
+    }
+
+    private function findMySheetOrFail(int $sheetId): \App\Models\ConsoSheet
+    {
+        $query = \App\Models\ConsoSheet::query()
+            ->where(function ($q) {
+                $groupMateIds = $this->user->groupMateIds();
+                $q->where('created_by', $this->user->id);
+                if (!empty($groupMateIds)) {
+                    $q->orWhereIn('created_by', $groupMateIds);
+                }
+            });
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-my-index');
+        return $query->findOrFail($sheetId);
     }
 
     private function hasChurchMemberAll(): bool

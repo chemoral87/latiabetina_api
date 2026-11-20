@@ -108,6 +108,96 @@ class ConsoSheetController extends Controller
         return response()->json($users->orderBy('name')->paginate(7)->items());
     }
 
+    public function indexMy(Request $request)
+    {
+        $query = ConsoSheet::with(['creator', 'organization'])
+            ->where('created_by', $this->user->id);
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-my-index');
+
+        if ($request->has('filter') && !empty($request->filter)) {
+            $query->where('folio_number', 'like', '%' . $request->filter . '%');
+        }
+
+        $query = $this->applyOrgIdFilter($query, $request);
+
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+        $sortBy = $request->get('sortBy', ['id']);
+        $sortDesc = $request->get('sortDesc', [true]);
+
+        if (!empty($sortBy) && is_array($sortBy)) {
+            $query = $this->applySort($query, $sortBy, $sortDesc);
+        }
+
+        if ($itemsPerPage === '-1') {
+            return response()->json(['data' => $query->get()]);
+        }
+
+        return new DataSetResource($query->paginate($itemsPerPage));
+    }
+
+    public function showMy($id)
+    {
+        $sheet = $this->findMyInScope($id);
+        return response()->json($sheet->load(['creator', 'organization']));
+    }
+
+    public function createMy(Request $request)
+    {
+        $request->validate([
+            'org_id'       => ['required', 'exists:organizations,id', Rule::in($this->user->getOrgsByPermission('conso-sheet-my-manage'))],
+            'folio_number' => 'required|string|unique:conso_sheets',
+            'date'         => 'required|date',
+            'how_did_you_hear'           => 'nullable|string|max:255',
+            'first_time_christian_church' => 'nullable|boolean',
+            'comments'       => 'nullable|string',
+            'special_request' => 'nullable|string',
+        ]);
+
+        $data = $request->all();
+        $data['created_by'] = $this->user->id;
+
+        $sheet = ConsoSheet::with(['creator', 'organization'])->findOrFail(ConsoSheet::create($data)->id);
+        return response()->json($sheet, 201);
+    }
+
+    public function updateMy(Request $request, $id)
+    {
+        $sheet = $this->findMyInScope($id);
+
+        $request->validate([
+            'org_id'       => ['sometimes', 'exists:organizations,id', Rule::in($this->user->getOrgsByPermission('conso-sheet-my-manage'))],
+            'folio_number' => 'required|string|unique:conso_sheets,folio_number,' . $id,
+            'date'         => 'required|date',
+            'how_did_you_hear'           => 'nullable|string|max:255',
+            'first_time_christian_church' => 'nullable|boolean',
+            'comments'       => 'nullable|string',
+            'special_request' => 'nullable|string',
+        ]);
+
+        $sheet->update($request->all());
+        return response()->json($sheet->load(['creator', 'organization']));
+    }
+
+    public function deleteMy($id)
+    {
+        $sheet = $this->findMyInScope($id);
+        $sheet->delete();
+
+        return response()->json(['success' => __('messa.conso_sheet_delete')]);
+    }
+
+    /**
+     * Resolve one of the caller's own sheets within their conso-sheet-my-index orgs.
+     */
+    private function findMyInScope($id): ConsoSheet
+    {
+        return $this->applyOrgPermissionScope(
+            ConsoSheet::query()->where('created_by', $this->user->id),
+            $this->user,
+            'conso-sheet-my-index'
+        )->findOrFail($id);
+    }
+
     public function show($id)
     {
         $sheet = ConsoSheet::with(['creator', 'organization'])->findOrFail($id);

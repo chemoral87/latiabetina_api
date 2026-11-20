@@ -28,10 +28,18 @@ final class ChurchMemberDetail
     public function __invoke(mixed $root, array $args): ?array
     {
         $user = $this->authenticatedUser();
-        // Same gate as `routes/api.php`: GET /church-member/{id}.
-        $this->orgIdsFor($user, 'church-member-index');
 
-        $member = $this->scopedQuery($user)
+        $orgIds = $user->getOrgsByPermission('church-member-index');
+        $isMyScope = false;
+        if (empty($orgIds) && ! $this->hasChurchMemberAll($user)) {
+            $orgIds = $user->getOrgsByPermission('church-member-my-index');
+            if (empty($orgIds)) {
+                $this->orgIdsFor($user, 'church-member-index');
+            }
+            $isMyScope = true;
+        }
+
+        $member = $this->scopedQuery($user, $isMyScope)
             ->with([
                 'creator:id,name,last_name',
                 'consolidators:id,name,last_name,second_last_name,email',
@@ -54,7 +62,7 @@ final class ChurchMemberDetail
      * Same scoping as `ChurchMemberController@findMemberInScope`.
      * ponytail: kept in sync by hand; extract a shared trait if it grows.
      */
-    private function scopedQuery(User $user): Builder
+    private function scopedQuery(User $user, bool $isMyScope = false): Builder
     {
         $query = ChurchMember::query();
 
@@ -66,15 +74,38 @@ final class ChurchMemberDetail
                 : $query->whereIn('org_id', $orgIds);
         }
 
-        $orgIds = $user->getOrgsByPermission('conso-sheet-index');
-        $query = $orgIds === []
-            ? $query->whereRaw('1 = 0')
-            : $query->whereIn('org_id', $orgIds);
+        if ($isMyScope) {
+            $orgIds = $user->getOrgsByPermission('church-member-my-index');
+            $query = $orgIds === []
+                ? $query->whereRaw('1 = 0')
+                : $query->whereIn('org_id', $orgIds);
+        } else {
+            $orgIds = $user->getOrgsByPermission('conso-sheet-index');
+            $query = $orgIds === []
+                ? $query->whereRaw('1 = 0')
+                : $query->whereIn('org_id', $orgIds);
+        }
 
-        return $query->where(function (Builder $q) use ($user) {
+        $groupMateIds = method_exists($user, 'groupMateIds') ? $user->groupMateIds() : [];
+
+        return $query->where(function (Builder $q) use ($user, $groupMateIds) {
             $q->where('created_by', $user->id)
+                ->orWhere(function ($q2) use ($groupMateIds) {
+                    if (!empty($groupMateIds)) {
+                        $q2->whereIn('created_by', $groupMateIds);
+                    } else {
+                        $q2->whereRaw('1 = 0');
+                    }
+                })
                 ->orWhereHas('consoSheet', fn (Builder $sheet) => $sheet->where('created_by', $user->id))
-                ->orWhereHas('consolidators', fn (Builder $consolidators) => $consolidators->where('users.id', $user->id));
+                ->orWhereHas('consolidators', fn (Builder $consolidators) => $consolidators->where('users.id', $user->id))
+                ->orWhereHas('consolidators', function ($q2) use ($groupMateIds) {
+                    if (!empty($groupMateIds)) {
+                        $q2->whereIn('users.id', $groupMateIds);
+                    } else {
+                        $q2->whereRaw('1 = 0');
+                    }
+                });
         });
     }
 
