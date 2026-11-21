@@ -16,8 +16,8 @@ final class UpdateChurchMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
+            'last_name' => 'sometimes|required|string|max:255',
             'second_last_name' => 'nullable|string|max:255',
             'cellphone' => 'nullable|string|max:50',
             'years_old' => 'nullable|integer|min:0|max:150',

@@ -110,8 +110,7 @@ class ConsoSheetController extends Controller
 
     public function indexMy(Request $request)
     {
-        $query = ConsoSheet::with(['creator', 'organization'])
-            ->where('created_by', $this->user->id);
+        $query = $this->applyMySheetScope(ConsoSheet::with(['creator', 'organization']));
         $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-my-index');
 
         if ($request->has('filter') && !empty($request->filter)) {
@@ -192,10 +191,27 @@ class ConsoSheetController extends Controller
     private function findMyInScope($id): ConsoSheet
     {
         return $this->applyOrgPermissionScope(
-            ConsoSheet::query()->where('created_by', $this->user->id),
+            $this->applyMySheetScope(ConsoSheet::query()),
             $this->user,
             'conso-sheet-my-index'
         )->findOrFail($id);
+    }
+
+    /**
+     * Sheets the caller owns or that a consolidator group-mate captured. The
+     * group is grouped in one closure so the org scope added afterwards stays an
+     * AND instead of escaping through `OR` precedence.
+     */
+    private function applyMySheetScope($query)
+    {
+        $groupMateIds = method_exists($this->user, 'groupMateIds') ? $this->user->groupMateIds() : [];
+
+        return $query->where(function ($q) use ($groupMateIds) {
+            $q->where('created_by', $this->user->id);
+            if (!empty($groupMateIds)) {
+                $q->orWhereIn('created_by', $groupMateIds);
+            }
+        });
     }
 
     public function show($id)
