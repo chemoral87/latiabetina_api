@@ -293,13 +293,13 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/my', 'indexMy')->middleware('permission_org:church-member-my-index');
         Route::get('/my/{id}', 'showMy')->middleware('permission_org:church-member-my-index');
         Route::post('/my', 'createMy')->middleware('permission_org:church-member-my-manage');
-        Route::put('/my/{id}', 'updateMy')->middleware('permission_org:church-member-my-manage');
+        Route::put('/my/{id}', 'updateMy')->middleware('permission_org:church-member-my-manage,church-member-my-update');
         Route::delete('/my/{id}', 'deleteMy')->middleware('permission_org:church-member-my-manage');
         Route::put('/my/{id}/status', 'updateStatusMy')->middleware('permission_org:church-member-my-manage');
         Route::get('/consolidator-logs', 'consolidatorLogsIndex')->middleware('permission_org:church-member-consolidator-logs-index');
         Route::get('/tracking-logs/my', 'trackingLogsMy')->middleware('permission_org:church-member-my-index');
         Route::get('/{id}', 'show')->middleware('permission_org:church-member-index');
-        Route::post('/', 'create')->middleware('permission_org:church-member-manage');
+        Route::post('/', 'create')->middleware('permission_org:church-member-manage,church-member-create');
         Route::put('/{id}', 'update')->middleware('permission_org:church-member-manage');
         Route::delete('/{id}', 'delete')->middleware('permission_org:church-member-manage');
         Route::put('/{id}/status', 'updateStatus')->middleware('permission_org:conso-sheet-index');

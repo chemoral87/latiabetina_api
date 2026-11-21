@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\DataSetResource;
 use App\Http\Resources\RoleShowResource;
 use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -103,6 +104,7 @@ class RoleController extends Controller {
       $permissions_ids = $request->permissions_ids;
       $role->permissions()->sync($permissions_ids);
     }
+    User::flushOrgPermissionsCache();
     return ['success' => __('messa.role_permission_update')];
   }
 
@@ -173,6 +175,7 @@ class RoleController extends Controller {
       $created[] = ['id' => $permission->id, 'name' => $permission->name];
     }
 
+    User::flushOrgPermissionsCache();
     // Backward compatibility: single case still returns `permission`
     if (count($created) === 1) {
       return response()->json([
@@ -191,6 +194,7 @@ class RoleController extends Controller {
 
   public function delete($id) {
     Role::find($id)->delete();
+    User::flushOrgPermissionsCache();
     return ['success' => __('messa.role_delete')];
   }
 

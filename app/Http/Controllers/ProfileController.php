@@ -87,6 +87,7 @@ class ProfileController extends Controller {
       abort(405, 'Profile not found');
     }
     $profile->delete();
+    cache()->forget("user:{$user_id}:org_permissions");
     return ['success' => __('messa.profile_delete')];
   }
 

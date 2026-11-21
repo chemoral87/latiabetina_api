@@ -15,6 +15,7 @@ use App\Models\Church\ChurchMemberTrackingLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ChurchMemberController extends Controller
@@ -184,6 +185,7 @@ class ChurchMemberController extends Controller
     public function create(\App\Http\Requests\StoreChurchMemberRequest $request)
     {
         $data = $request->validated();
+        $data = $this->titleCaseNameFields($data);
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
             try {
@@ -258,6 +260,7 @@ $member = ChurchMember::create($data);
             $member = ChurchMember::findOrFail($id);
 
             $data = $request->validated();
+            $data = $this->titleCaseNameFields($data);
 
             if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
                 try {
@@ -318,8 +321,6 @@ $member = ChurchMember::create($data);
         return response()->json(['success' => __('messa.church-member_delete')]);
     }
 
-    // â”€â”€ ClasificaciÃ³n (estado) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     public function updateStatus(Request $request, $id)
     {
         $member = $this->findMemberInScope($id);
@@ -360,9 +361,6 @@ $member = ChurchMember::create($data);
 
         return response()->json($logs);
     }
-
-    // â”€â”€ Consolidadores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     public function consolidators($id)
     {
         $member = $this->findMemberInScope($id);
@@ -671,6 +669,7 @@ $member = ChurchMember::create($data);
     public function createMy(\App\Http\Requests\StoreChurchMemberRequest $request)
     {
         $data = $request->validated();
+        $data = $this->titleCaseNameFields($data);
 
         if (!empty($data['conso_sheet_id'])) {
             $sheet = $this->findMySheetOrFail((int) $data['conso_sheet_id']);
@@ -712,6 +711,7 @@ $member = ChurchMember::create($data);
         $member = $this->findMemberInMyScope($id);
 
         $data = $request->validated();
+        $data = $this->titleCaseNameFields($data);
         unset($data['conso_sheet_id'], $data['created_by'], $data['org_id']);
 
         if ($request->filled('url_image') && str_starts_with($request->url_image, 'data:')) {
@@ -798,6 +798,20 @@ $member = ChurchMember::create($data);
             });
         $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-my-index');
         return $query->findOrFail($sheetId);
+    }
+
+    /**
+     * Title-case the member's name fields. Str::title keeps accents intact.
+     */
+    private function titleCaseNameFields(array $data): array
+    {
+        foreach (['name', 'last_name', 'second_last_name'] as $field) {
+            if (isset($data[$field]) && is_string($data[$field]) && $data[$field] !== '') {
+                $data[$field] = Str::title($data[$field]);
+            }
+        }
+
+        return $data;
     }
 
     private function hasChurchMemberAll(): bool

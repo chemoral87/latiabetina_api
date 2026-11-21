@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\DataSetResource;
 use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 
@@ -72,6 +73,8 @@ class PermissionController extends Controller {
     $permission->name = $request->input('name');
     $permission->save();
 
+    User::flushOrgPermissionsCache();
+
     return [
       'success' => __('messa.permission_update'),
       'data' => $permission,
@@ -120,6 +123,7 @@ class PermissionController extends Controller {
 
   public function delete($id) {
     Permission::find($id)->delete();
+    User::flushOrgPermissionsCache();
     return ['success' => __('messa.permission_delete')];
   }
 

@@ -125,6 +125,19 @@ final class User extends Authenticatable implements JWTSubject, AuditableContrac
         return $permissionsOrgs;
     }
 
+  /**
+   * Drop the cached permission map so role/permission edits apply immediately
+   * instead of after the 5 minute TTL. Called by the role/permission endpoints.
+   *
+   * shortcut: clears every user; narrow it to the affected profiles if the user table grows.
+   */
+  public static function flushOrgPermissionsCache(): void
+  {
+    foreach (static::query()->pluck('id') as $id) {
+      cache()->forget("user:{$id}:org_permissions");
+    }
+  }
+
   // No Auditing of password
 
   public function getAuditIgnore(): array {
