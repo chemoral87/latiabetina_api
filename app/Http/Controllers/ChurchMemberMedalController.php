@@ -23,8 +23,46 @@ class ChurchMemberMedalController extends Controller
 
     public function index(Request $request, $id)
     {
-        $member = $this->findMemberInScope($id);
+        return $this->listMedals($this->findMemberInScope($id));
+    }
 
+    public function indexMy(Request $request, $id)
+    {
+        return $this->listMedals($this->findMemberInMyScope($id));
+    }
+
+    public function store(Request $request, $id)
+    {
+        return $this->createMedal($request, $this->findMemberInScope($id));
+    }
+
+    public function storeMy(Request $request, $id)
+    {
+        return $this->createMedal($request, $this->findMemberInMyScope($id));
+    }
+
+    public function destroy(Request $request, $id, $medalId)
+    {
+        return $this->removeMedal($this->findMemberInScope($id), $medalId);
+    }
+
+    public function destroyMy(Request $request, $id, $medalId)
+    {
+        return $this->removeMedal($this->findMemberInMyScope($id), $medalId);
+    }
+
+    public function logs(Request $request, $id)
+    {
+        return $this->listMedalLogs($this->findMemberInScope($id));
+    }
+
+    public function logsMy(Request $request, $id)
+    {
+        return $this->listMedalLogs($this->findMemberInMyScope($id));
+    }
+
+    private function listMedals(ChurchMember $member)
+    {
         $medals = $member->medals()
             ->with('creator')
             ->orderByDesc('id')
@@ -39,10 +77,8 @@ class ChurchMemberMedalController extends Controller
         return response()->json($medals);
     }
 
-    public function store(Request $request, $id)
+    private function createMedal(Request $request, ChurchMember $member)
     {
-        $member = $this->findMemberInScope($id);
-
         $request->validate([
             'medal'       => 'required|string|max:255',
             'description' => 'nullable|array',
@@ -70,10 +106,8 @@ class ChurchMemberMedalController extends Controller
         return response()->json($medal->load('creator'), 201);
     }
 
-    public function destroy(Request $request, $id, $medalId)
+    private function removeMedal(ChurchMember $member, $medalId)
     {
-        $member = $this->findMemberInScope($id);
-
         $medal = $member->medals()->findOrFail($medalId);
 
         ChurchMemberMedalLog::create([
@@ -89,10 +123,8 @@ class ChurchMemberMedalController extends Controller
         return response()->json(['success' => 'Medalla removida exitosamente']);
     }
 
-    public function logs(Request $request, $id)
+    private function listMedalLogs(ChurchMember $member)
     {
-        $member = $this->findMemberInScope($id);
-
         $logs = ChurchMemberMedalLog::where('church_member_id', $member->id)
             ->with('changer:id,name,last_name')
             ->orderByDesc('id')
@@ -111,11 +143,44 @@ class ChurchMemberMedalController extends Controller
     {
         $query = ChurchMember::query();
         if ($this->hasChurchMemberAll()) {
-            $query = $this->applyChurchMemberAllScope($query);
-        } else {
-            $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
+            return $this->applyChurchMemberAllScope($query)->findOrFail($id);
         }
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
         return $query->findOrFail($id);
+    }
+
+    private function findMemberInMyScope($id): ChurchMember
+    {
+        $query = ChurchMember::query();
+        $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-my-index');
+        $query = $this->applyMineScope($query);
+        return $query->findOrFail($id);
+    }
+
+    private function applyMineScope($query)
+    {
+        $groupMateIds = method_exists($this->user, 'groupMateIds') ? $this->user->groupMateIds() : [];
+
+        return $query->where(function ($q) use ($groupMateIds) {
+            $q->where('created_by', $this->user->id)
+              ->orWhere(function ($q) use ($groupMateIds) {
+                if (!empty($groupMateIds)) {
+                    $q->whereIn('created_by', $groupMateIds);
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+              })->orWhereHas('consoSheet', function ($q) {
+                $q->where('created_by', $this->user->id);
+              })->orWhereHas('consolidators', function ($q) {
+                $q->where('users.id', $this->user->id);
+              })->orWhereHas('consolidators', function ($q) use ($groupMateIds) {
+                if (!empty($groupMateIds)) {
+                    $q->whereIn('users.id', $groupMateIds);
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+              });
+        });
     }
 
     private function hasChurchMemberAll(): bool

@@ -310,6 +310,11 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     });
 
     Route::prefix('church-member')->controller(ChurchMemberMedalController::class)->group(function () {
+        Route::get('/my/{id}/medals', 'indexMy')->middleware('permission_org:church-member-my-index');
+        Route::post('/my/{id}/medals', 'storeMy')->middleware('permission_org:church-member-my-manage');
+        Route::delete('/my/{id}/medals/{medalId}', 'destroyMy')->middleware('permission_org:church-member-my-manage');
+        Route::get('/my/{id}/medal-logs', 'logsMy')->middleware('permission_org:church-member-my-index');
+
         Route::get('/{id}/medals', 'index')->middleware('permission_org:church-member-medal-index');
         Route::post('/{id}/medals', 'store')->middleware('permission_org:church-member-medal-create');
         Route::delete('/{id}/medals/{medalId}', 'destroy')->middleware('permission_org:church-member-medal-delete');
