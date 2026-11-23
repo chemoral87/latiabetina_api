@@ -300,8 +300,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/tracking-logs/my', 'trackingLogsMy')->middleware('permission_org:church-member-my-index');
         Route::get('/{id}', 'show')->middleware('permission_org:church-member-index');
         Route::post('/', 'create')->middleware('permission_org:church-member-manage,church-member-create');
-        Route::put('/{id}', 'update')->middleware('permission_org:church-member-manage');
-        Route::delete('/{id}', 'delete')->middleware('permission_org:church-member-manage');
+        Route::put('/{id}', 'update')->middleware('permission_org:church-member-manage,church-member-update');
+        Route::delete('/{id}', 'delete')->middleware('permission_org:church-member-manage,church-member-delete');
         Route::put('/{id}/status', 'updateStatus')->middleware('permission_org:conso-sheet-index');
         Route::get('/{id}/status-logs', 'statusLogs')->middleware('permission_org:conso-sheet-index');
         Route::get('/{id}/consolidators', 'consolidators')->middleware('permission_org:church-member-consolidator-assign');
