@@ -59,7 +59,9 @@ final class ChurchMemberDetail
     }
 
     /**
-     * Same scoping as `ChurchMemberController@findMemberInScope`.
+     * Same scoping as `ChurchMemberController@show`.
+     * church-member-index: all members in permitted orgs (no creator restriction).
+     * church-member-my-index: mine scope (created_by / group-mates / consolidators).
      * ponytail: kept in sync by hand; extract a shared trait if it grows.
      */
     private function scopedQuery(User $user, bool $isMyScope = false): Builder
@@ -79,34 +81,35 @@ final class ChurchMemberDetail
             $query = $orgIds === []
                 ? $query->whereRaw('1 = 0')
                 : $query->whereIn('org_id', $orgIds);
-        } else {
-            $orgIds = $user->getOrgsByPermission('conso-sheet-index');
-            $query = $orgIds === []
-                ? $query->whereRaw('1 = 0')
-                : $query->whereIn('org_id', $orgIds);
+
+            $groupMateIds = method_exists($user, 'groupMateIds') ? $user->groupMateIds() : [];
+
+            return $query->where(function (Builder $q) use ($user, $groupMateIds) {
+                $q->where('created_by', $user->id)
+                    ->orWhere(function ($q2) use ($groupMateIds) {
+                        if (!empty($groupMateIds)) {
+                            $q2->whereIn('created_by', $groupMateIds);
+                        } else {
+                            $q2->whereRaw('1 = 0');
+                        }
+                    })
+                    ->orWhereHas('consoSheet', fn (Builder $sheet) => $sheet->where('created_by', $user->id))
+                    ->orWhereHas('consolidators', fn (Builder $consolidators) => $consolidators->where('users.id', $user->id))
+                    ->orWhereHas('consolidators', function ($q2) use ($groupMateIds) {
+                        if (!empty($groupMateIds)) {
+                            $q2->whereIn('users.id', $groupMateIds);
+                        } else {
+                            $q2->whereRaw('1 = 0');
+                        }
+                    });
+            });
         }
 
-        $groupMateIds = method_exists($user, 'groupMateIds') ? $user->groupMateIds() : [];
-
-        return $query->where(function (Builder $q) use ($user, $groupMateIds) {
-            $q->where('created_by', $user->id)
-                ->orWhere(function ($q2) use ($groupMateIds) {
-                    if (!empty($groupMateIds)) {
-                        $q2->whereIn('created_by', $groupMateIds);
-                    } else {
-                        $q2->whereRaw('1 = 0');
-                    }
-                })
-                ->orWhereHas('consoSheet', fn (Builder $sheet) => $sheet->where('created_by', $user->id))
-                ->orWhereHas('consolidators', fn (Builder $consolidators) => $consolidators->where('users.id', $user->id))
-                ->orWhereHas('consolidators', function ($q2) use ($groupMateIds) {
-                    if (!empty($groupMateIds)) {
-                        $q2->whereIn('users.id', $groupMateIds);
-                    } else {
-                        $q2->whereRaw('1 = 0');
-                    }
-                });
-        });
+        // church-member-index: all members in permitted orgs, no creator restriction.
+        $orgIds = $user->getOrgsByPermission('church-member-index');
+        return $orgIds === []
+            ? $query->whereRaw('1 = 0')
+            : $query->whereIn('org_id', $orgIds);
     }
 
     private function hasChurchMemberAll(User $user): bool
