@@ -170,8 +170,7 @@ class ChurchMemberController extends Controller
         if ($this->hasChurchMemberAll()) {
             $query = $this->applyChurchMemberAllScope($query);
         } else {
-            $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
-            $query = $this->applyMineScope($query);
+            $query = $this->applyOrgPermissionScope($query, $this->user, 'church-member-index');
         }
         $member = $query->with('creator:id,name,last_name')
             ->with(['consolidators:id,name,last_name,second_last_name,email'])
