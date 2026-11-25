@@ -48,14 +48,9 @@ class ConsoSheetController extends Controller
                 $query->whereRaw('1 = 0');
             }
         } else {
+            // conso-sheet-index: all sheets in the user's permitted orgs.
+            // No created_by/consolidator restriction — that is the my-scope's job.
             $query = $this->applyOrgPermissionScope($query, $this->user, 'conso-sheet-index');
-
-            $query->where(function ($q) {
-                $q->where('created_by', $this->user->id)
-                    ->orWhereHas('churchMembers.consolidators', function ($q) {
-                        $q->where('users.id', $this->user->id);
-                    });
-            });
         }
 
         if ($request->has('filter') && !empty($request->filter)) {
