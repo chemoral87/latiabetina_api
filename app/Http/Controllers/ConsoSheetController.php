@@ -86,9 +86,9 @@ class ConsoSheetController extends Controller
             ->whereHas('profiles', function ($query) use ($orgId) {
                 $query->where('org_id', $orgId)->where(function ($q) {
                     $q->whereHas('roles.permissions', function ($p) {
-                        $p->where('name', 'conso-sheet-index');
+                        $p->whereIn('name', ['conso-sheet-index', 'conso-sheet-my-index']);
                     })->orWhereHas('permissions', function ($p) {
-                        $p->where('name', 'conso-sheet-index');
+                        $p->whereIn('name', ['conso-sheet-index', 'conso-sheet-my-index']);
                     });
                 });
             });
